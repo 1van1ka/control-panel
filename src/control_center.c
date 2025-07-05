@@ -40,27 +40,29 @@ XftColor color_alloc(struct App *a, XRenderColor *color_src) {
 }
 
 void create_ui(struct App *a) {
-  layout_add_button(a, 13, "Prev");
-  layout_add_button(a, 14, "Play");
-  layout_add_button(a, 15, "Next");
+  layout_add_button(a, ButtonPlayerPrev, "Prev");
+  layout_add_button(a, ButtonPlayerPlayPause, "Play");
+  layout_add_button(a, ButtonPlayerNext, "Next");
   layout_new_row();
 
-  layout_add_button(a, 10, get_state_wifi() ? "Wi-Fi:On" : "Wi-Fi:Off");
-  layout_add_button(a, 11, get_state_bluetooth() ? "BT:On" : "BT:Off");
+  layout_add_button(a, ButtonWiFi, get_state_wifi() ? "Wi-Fi:On" : "Wi-Fi:Off");
+  layout_add_button(a, ButtonBluetooth,
+                    get_state_bluetooth() ? "BT:On" : "BT:Off");
   layout_new_row();
 
-  layout_add_button(a, 12, get_state_dunst() ? "Notify" : "Silence");
+  layout_add_button(a, ButtonNotify, get_state_dunst() ? "Notify" : "Silence");
   layout_new_row();
 
   layout_add_label(a, "Brn");
-  layout_add_slider(a, 0, get_level_brightness(), 100);
+  layout_add_slider(a, SliderBrightness, get_level_brightness(), 100);
   layout_new_row();
 
-  layout_add_button(a, 1, get_state_audio_mute() ? "Mut" : "Vol");
-  layout_add_slider(a, 1, get_level_audio(), 120);
+  layout_add_button(a, ButtonVolumeMute,
+                    get_state_audio_mute() ? "Mut" : "Vol");
+  layout_add_slider(a, SliderVolume, get_level_audio(), 120);
 
-  spawn_state_thread(a, 0, WIDGET_SLIDER, get_level_brightness);
-  spawn_state_thread(a, 1, WIDGET_SLIDER, get_level_audio);
+  spawn_state_thread(a, SliderBrightness, WIDGET_SLIDER, get_level_brightness);
+  spawn_state_thread(a, SliderVolume, WIDGET_SLIDER, get_level_audio);
 }
 
 void draw_widget(struct App *a, struct Widget *w) {
@@ -124,6 +126,8 @@ void draw_widget(struct App *a, struct Widget *w) {
     XFreeGC(dpy, gc);
     break;
   }
+  default:
+    break;
   }
   XFlush(dpy);
 }
@@ -185,7 +189,7 @@ void kill_panel(Display *dpy, struct App *a, XClassHint ch) {
   XFree(children);
 }
 
-void layout_add_button(struct App *a, int id, const char *text) {
+void layout_add_button(struct App *a, enum WidgetId id, const char *text) {
   XGlyphInfo extents;
   XftTextExtents8(dpy, a->font, (FcChar8 *)text, strlen(text), &extents);
 
@@ -219,6 +223,7 @@ void layout_add_label(struct App *a, const char *text) {
 
   a->widgets[a->widget_count++] = (struct Widget){
       .type = WIDGET_LABEL,
+      .id = IdNone,
       .x = layout_x,
       .y = layout_y + height,
       .normal_color = color_alloc(a, &ColorsSrc[NormFg]),
@@ -230,7 +235,7 @@ void layout_add_label(struct App *a, const char *text) {
     layout_row_height = height + 2 * PADDING;
 }
 
-void layout_add_slider(struct App *a, int id, int value, int max_value) {
+void layout_add_slider(struct App *a, enum WidgetId id, int value, int max_value) {
   int height = 14;
   int width = 200;
 
@@ -285,16 +290,16 @@ void run(struct App *a) {
       break;
 
     case ButtonRelease:
-      a->dragging_id = -1;
-      a->dragging_type = WIDGET_LABEL;
+      a->dragging_id = IdNone;
+      a->dragging_type = TypeNone;
       break;
     }
   }
 }
 
 void setup(struct App *a) {
-  a->dragging_id = -1;
-  a->dragging_type = WIDGET_LABEL;
+  a->dragging_id = IdNone;
+  a->dragging_type = TypeNone;
   a->widget_count = 0;
 
   pthread_mutex_init(&a->lock, NULL);

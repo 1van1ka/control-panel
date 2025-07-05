@@ -28,15 +28,30 @@
 #define BG "#282828"
 #define MAX_WIDGETS 32
 
-enum WidgetType{
+enum WidgetType {
+  TypeNone,
   WIDGET_LABEL,
   WIDGET_BUTTON,
   WIDGET_SLIDER,
 };
 
+enum WidgetId {
+  IdNone,
+  ButtonVolumeMute,
+  SliderVolume,
+  SliderBrightness,
+  ButtonPlayerPrev,
+  ButtonPlayerPlayPause,
+  ButtonPlayerNext,
+  ButtonNotify,
+  ButtonWiFi,
+  ButtonBluetooth,
+  LabelBrightness
+};
+
 struct Widget {
   enum WidgetType type;
-  int id;
+  enum WidgetId id;
   int x, y;
   int width, height;
   int knob;
@@ -60,12 +75,12 @@ struct App {
   struct Widget widgets[MAX_WIDGETS];
   pthread_mutex_t lock;
   int widget_count;
-  int dragging_id;
+  enum WidgetId dragging_id;
   enum WidgetType dragging_type;
 };
 
 struct ThreadArgs {
-  int id;
+  enum WidgetId id;
   enum WidgetType type;
   struct App *app;
   pthread_t thread;

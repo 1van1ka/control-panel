@@ -4,37 +4,41 @@
 
 void handler_button(struct Widget *w) {
   switch (w->id) {
-  case 1:
+  case ButtonVolumeMute:
     on_volume_button_click(w);
     break;
-  case 10:
+  case ButtonWiFi:
     on_wifi_clicked(w);
     break;
-  case 11:
+  case ButtonBluetooth:
     on_bluetooth_clicked(w);
     break;
-  case 12:
+  case ButtonNotify:
     on_notify_clicked(w);
     break;
-  case 13:
+  case ButtonPlayerPrev:
     on_music_prev_clicked(w);
     break;
-  case 14:
+  case ButtonPlayerPlayPause:
     on_music_playpause_clicked(w);
     break;
-  case 15:
+  case ButtonPlayerNext:
     on_music_next_clicked(w);
+    break;
+  default:
     break;
   }
 }
 
 void handler_slider(struct Widget *w) {
   switch (w->id) {
-  case 0:
+  case SliderBrightness:
     on_brightness_changed(w->slider_value);
     break;
-  case 1:
+  case SliderVolume:
     on_volume_changed(w->slider_value);
+    break;
+  default:
     break;
   }
 }
@@ -72,7 +76,7 @@ int handle_button_press(struct App *a, XEvent *ev) {
         }
         break;
       }
-      case WIDGET_LABEL:
+      default:
         break;
       }
   }
@@ -189,7 +193,7 @@ void update_hover_state(struct App *a, int mouse_x, int mouse_y) {
       int right = w->x - PADDING + w->width + 2 * PADDING;
       w->hovered =
           (a->dragging_id == w->id && a->dragging_type == w->type) ||
-          ((a->dragging_id == -1) && (mouse_x >= left && mouse_x <= right &&
+          ((a->dragging_id == IdNone) && (mouse_x >= left && mouse_x <= right &&
                                       mouse_y >= top && mouse_y <= bottom));
       break;
     }
@@ -200,11 +204,11 @@ void update_hover_state(struct App *a, int mouse_x, int mouse_y) {
       int right = w->x + w->width;
       w->hovered =
           (a->dragging_id == w->id && a->dragging_type == w->type) ||
-          ((a->dragging_id == -1) && (mouse_x >= left && mouse_x <= right &&
+          ((a->dragging_id == IdNone) && (mouse_x >= left && mouse_x <= right &&
                                       mouse_y >= top && mouse_y <= bottom));
       break;
     }
-    case WIDGET_LABEL:
+    default:
       break;
     }
   }
