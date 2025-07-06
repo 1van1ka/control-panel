@@ -17,7 +17,7 @@ static Display *dpy;
 static Window win;
 
 static int running = 1;
-const int PADDING = 5;
+const int PADDING = 7;
 
 int layout_x = 20;
 int layout_y = 20;
@@ -235,9 +235,11 @@ void layout_add_label(struct App *a, const char *text) {
     layout_row_height = height + 2 * PADDING;
 }
 
-void layout_add_slider(struct App *a, enum WidgetId id, int value, int max_value) {
+void layout_add_slider(struct App *a, enum WidgetId id, int value,
+                       int max_value) {
   int height = 14;
   int width = 200;
+  int slider_y = layout_y + a->font->ascent;
 
   a->widgets[a->widget_count++] =
       (struct Widget){.type = WIDGET_SLIDER,
@@ -254,9 +256,11 @@ void layout_add_slider(struct App *a, enum WidgetId id, int value, int max_value
                       .slider_value = value,
                       .max_value = max_value};
 
-  layout_x += width + layout_spacing_x;
-  if (height > layout_row_height)
-    layout_row_height = height;
+  layout_x += width + layout_spacing_x + PADDING;
+  
+  int total_height = (slider_y - layout_y) + height / 2 + 2 * PADDING;
+  if (total_height > layout_row_height)
+    layout_row_height = total_height;
 }
 
 void layout_new_row(void) {
