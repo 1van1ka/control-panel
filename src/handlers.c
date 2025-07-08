@@ -44,8 +44,8 @@ void handler_slider(struct Widget *w) {
 }
 
 int handle_button_press(struct App *a, XEvent *ev) {
-  if (ev->xbutton.x_root >= WIDTH || ev->xbutton.x_root <= POS_X ||
-      ev->xbutton.y_root <= POS_Y || ev->xbutton.y_root >= HEIGHT)
+  if (ev->xbutton.x_root >= a->width_app || ev->xbutton.x_root <= POS_X ||
+      ev->xbutton.y_root <= POS_Y || ev->xbutton.y_root >= a->width_app)
     return 1;
   for (int i = 0; i < a->widget_count; ++i) {
     struct Widget *w = &a->widgets[i];
@@ -144,7 +144,7 @@ void on_music_playpause_clicked(__attribute__((unused)) struct Widget *w) {
 }
 
 void on_music_prev_clicked(__attribute__((unused)) struct Widget *w) {
-  char *argv[] = {"playerctl", "prev->ous", NULL};
+  char *argv[] = {"playerctl", "previous", NULL};
   execute_command_args(argv);
 }
 
@@ -176,8 +176,8 @@ void on_volume_button_click(struct Widget *w) {
 }
 
 void on_wifi_clicked(struct Widget *w) {
-  char *action = get_state_wifi() ? "off" : "on";
-  char *argv[] = {"nmcli", "radio", "wifi", action, NULL};
+  char *argv[] = {"nmcli", "radio", "wifi", get_state_wifi() ? "off" : "on",
+                  NULL};
   execute_command_args(argv);
   set_value(w, get_state_wifi() ? "Wi-Fi:On" : "Wi-Fi:Off");
 }
@@ -194,7 +194,7 @@ void update_hover_state(struct App *a, int mouse_x, int mouse_y) {
       w->hovered =
           (a->dragging_id == w->id && a->dragging_type == w->type) ||
           ((a->dragging_id == IdNone) && (mouse_x >= left && mouse_x <= right &&
-                                      mouse_y >= top && mouse_y <= bottom));
+                                          mouse_y >= top && mouse_y <= bottom));
       break;
     }
     case WIDGET_SLIDER: {
@@ -205,7 +205,7 @@ void update_hover_state(struct App *a, int mouse_x, int mouse_y) {
       w->hovered =
           (a->dragging_id == w->id && a->dragging_type == w->type) ||
           ((a->dragging_id == IdNone) && (mouse_x >= left && mouse_x <= right &&
-                                      mouse_y >= top && mouse_y <= bottom));
+                                          mouse_y >= top && mouse_y <= bottom));
       break;
     }
     default:

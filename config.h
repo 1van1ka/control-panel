@@ -20,8 +20,6 @@
 #include <X11/Xatom.h>
 #include <X11/Xft/Xft.h>
 #include <X11/Xlib.h>
-#define WIDTH 350
-#define HEIGHT 400
 #define POS_X 25
 #define POS_Y 25
 #define FONT "JetBrains Mono-14"
@@ -60,13 +58,18 @@ struct Widget {
   XftColor normal_back;
   XftColor hover_color;
   XftColor hover_back;
-  int hovered;
+  bool hovered;
+  bool full_width;
   int slider_value;
   int max_value;
   int drag_offset_x;
+  char *valid_label;
+  char *invalid_label;
 };
 
 struct App {
+  int height_app;
+  int width_app;
   XftDraw *xftdraw;
   XftColor bg, fg;
   XftFont *font;
