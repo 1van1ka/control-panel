@@ -1,21 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// ID TYPE
-// BUTTONS:
-// 0 bthn
-// 1 volume
-// 2 wifi
-// 3 bt 
-// 4 notify
-// 5 prev mus
-// 6 play/pause mus
-// 7 next mus
-//
-// SLIDERS:
-// 0 bthn
-// 1 volume
-
 #include <X11/X.h>
 #include <X11/Xatom.h>
 #include <X11/Xft/Xft.h>
@@ -80,6 +65,7 @@ struct App {
   int widget_count;
   enum WidgetId dragging_id;
   enum WidgetType dragging_type;
+  Pixmap buffer;
 };
 
 struct ThreadArgs {
@@ -88,7 +74,7 @@ struct ThreadArgs {
   struct App *app;
   pthread_t thread;
   int (*getter)(void);
-} ;
+};
 
 enum { NormBg, HoverBg, NormFg, HoverFg, NormFgSlider };
 

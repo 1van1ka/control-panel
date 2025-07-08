@@ -14,7 +14,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-static Display *dpy;
+Display *dpy;
 static Window win;
 
 static int running = 1;
@@ -34,13 +34,8 @@ XRenderColor ColorsSrc[5] = {
     [NormBg] = {0x3838, 0x3838, 0x3838, 0xffff},
 };
 
-XftColor color_alloc(struct App *a, XRenderColor *color_src) {
-  XftColor color_dest;
-  XftColorAllocValue(dpy, a->visual, a->colormap, color_src, &color_dest);
-  return color_dest;
-}
-
 void draw_widget(struct App *a, struct Widget *w) {
+  GC gc = XCreateGC(dpy, a->buffer, 0, NULL);
   switch (w->type) {
   case WIDGET_LABEL: {
     XGlyphInfo extents;
@@ -68,12 +63,9 @@ void draw_widget(struct App *a, struct Widget *w) {
     int rect_width = w->width + 2 * PADDING;
     int rect_height = w->height + 2 * PADDING;
 
-    XClearArea(dpy, win, rect_x, rect_y, rect_width, rect_height, False);
-
-    GC gc = XCreateGC(dpy, win, 0, NULL);
     XSetForeground(dpy, gc,
                    w->hovered ? w->hover_back.pixel : w->normal_back.pixel);
-    XFillRectangle(dpy, win, gc, rect_x, rect_y, rect_width, rect_height);
+    XFillRectangle(dpy, a->buffer, gc, rect_x, rect_y, rect_width, rect_height);
     XFreeGC(dpy, gc);
 
     XftDrawStringUtf8(a->xftdraw,
@@ -83,37 +75,39 @@ void draw_widget(struct App *a, struct Widget *w) {
   }
 
   case WIDGET_SLIDER: {
-    XClearArea(dpy, win, w->x, w->y - w->knob / 2, w->width, w->knob, False);
-
-    GC gc = XCreateGC(dpy, win, 0, NULL);
-
     XSetForeground(dpy, gc,
                    w->hovered ? w->hover_back.pixel : w->normal_back.pixel);
-    XFillRectangle(dpy, win, gc, w->x, w->y - 3, w->width, 6);
+    XFillRectangle(dpy, a->buffer, gc, w->x, w->y - 3, w->width, 6);
 
     int knob_x = w->x + (w->slider_value * (w->width - w->knob)) / w->max_value;
     int knob_y = w->y - w->knob / 2;
 
     XSetForeground(dpy, gc,
                    w->hovered ? w->hover_color.pixel : w->normal_color.pixel);
-    XFillRectangle(dpy, win, gc, knob_x, knob_y, w->knob, w->knob);
+    XFillRectangle(dpy, a->buffer, gc, knob_x, knob_y, w->knob, w->knob);
 
-    XFreeGC(dpy, gc);
     break;
   }
   default:
     break;
+  XFreeGC(dpy, gc);
   }
 }
 
 void draw_widgets(struct App *a) {
-  XClearWindow(dpy, win);
+  GC gc = XCreateGC(dpy, win, 0, NULL);
+  XSetForeground(dpy, gc, a->bg.pixel);
+  XFillRectangle(dpy, a->buffer, gc, 0, 0, a->width_app, a->height_app);
+
   for (int i = 0; i < a->widget_count; ++i) {
     struct Widget *w = &a->widgets[i];
     pthread_mutex_lock(&a->lock);
     draw_widget(a, w);
     pthread_mutex_unlock(&a->lock);
   }
+
+  XCopyArea(dpy, a->buffer, win, gc, 0, 0, a->width_app, a->height_app, 0, 0);
+  XFreeGC(dpy, gc);
   XFlush(dpy);
 }
 
@@ -166,96 +160,13 @@ void kill_panel(Display *dpy, struct App *a, XClassHint ch) {
   XFree(children);
 }
 
-void layout_add_button(struct App *a, enum WidgetId id, const char *text,
-                       char *valid_data, char *invalid_data, bool full_width) {
-  XGlyphInfo extents;
-  XftTextExtents8(dpy, a->font, (FcChar8 *)text, strlen(text), &extents);
-
-  int width = extents.xOff;
-  int height = a->font->ascent + a->font->descent;
-
-  a->widgets[a->widget_count++] =
-      (struct Widget){.type = WIDGET_BUTTON,
-                      .valid_label = strdup(valid_data),
-                      .invalid_label = strdup(invalid_data),
-                      .id = id,
-                      .x = layout_x,
-                      .y = layout_y + height,
-                      .text = strdup(text),
-                      .normal_color = color_alloc(a, &ColorsSrc[NormFg]),
-                      .normal_back = color_alloc(a, &ColorsSrc[NormBg]),
-                      .hover_color = color_alloc(a, &ColorsSrc[HoverFg]),
-                      .hover_back = color_alloc(a, &ColorsSrc[HoverBg]),
-                      .hovered = false,
-                      .full_width = full_width};
-
-  layout_x += width + 2 * PADDING + layout_spacing_x;
-  if (height + 2 * PADDING > layout_row_height)
-    layout_row_height = height + 2 * PADDING;
-}
-
-void layout_add_label(struct App *a, const char *text, bool full_width) {
-  XGlyphInfo extents;
-  XftTextExtents8(dpy, a->font, (FcChar8 *)text, strlen(text), &extents);
-
-  int width = extents.xOff;
-  int height = a->font->ascent + a->font->descent;
-
-  a->widgets[a->widget_count++] =
-      (struct Widget){.type = WIDGET_LABEL,
-                      .id = IdNone,
-                      .x = layout_x,
-                      .y = layout_y + height,
-                      .normal_color = color_alloc(a, &ColorsSrc[NormFg]),
-                      .text = strdup(text),
-                      .full_width = full_width};
-
-  layout_x += width + 2 * PADDING + layout_spacing_x;
-  if (height + 2 * PADDING > layout_row_height)
-    layout_row_height = height + 2 * PADDING;
-}
-
-void layout_add_slider(struct App *a, enum WidgetId id, int value,
-                       int max_value, bool full_width) {
-  int height = 14;
-  int width = 200;
-  int slider_y = layout_y + a->font->ascent;
-
-  a->widgets[a->widget_count++] =
-      (struct Widget){.type = WIDGET_SLIDER,
-                      .id = id,
-                      .x = layout_x,
-                      .y = layout_y + a->font->ascent,
-                      .width = width,
-                      .knob = height,
-                      .height = height,
-                      .normal_color = color_alloc(a, &ColorsSrc[NormFg]),
-                      .normal_back = color_alloc(a, &ColorsSrc[NormBg]),
-                      .hover_color = color_alloc(a, &ColorsSrc[HoverFg]),
-                      .hover_back = color_alloc(a, &ColorsSrc[HoverBg]),
-                      .slider_value = value,
-                      .max_value = max_value,
-                      .full_width = full_width};
-
-  layout_x += width + layout_spacing_x + PADDING;
-
-  int total_height = (slider_y - layout_y) + height / 2 + 2 * PADDING;
-  if (total_height > layout_row_height)
-    layout_row_height = total_height;
-}
-
-void layout_new_row(void) {
-  layout_x = 20;
-  layout_y += layout_row_height + layout_spacing_y;
-  layout_row_height = 0;
-}
 
 void run(struct App *a) {
   XEvent ev;
-  while (running) {
-    draw_widgets(a);
-    update_hover_state(a, ev.xmotion.x, ev.xmotion.y);
+while (running) {
     XNextEvent(dpy, &ev);
+
+    update_hover_state(a, ev.xmotion.x, ev.xmotion.y);
 
     switch (ev.type) {
     case EnterNotify:
@@ -263,6 +174,7 @@ void run(struct App *a) {
     case MotionNotify:
       if (handle_motion_notify(a, &ev))
         running = 0;
+      draw_widgets(a);
       break;
 
     case KeyPress:
@@ -272,14 +184,22 @@ void run(struct App *a) {
     case ButtonPress:
       if (handle_button_press(a, &ev))
         running = 0;
+      draw_widgets(a);
       break;
 
     case ButtonRelease:
       a->dragging_id = IdNone;
       a->dragging_type = TypeNone;
       break;
+
+    case Expose:
+      draw_widgets(a);
+      break;
+
+    default:
+      break;
     }
-  }
+}
 }
 
 void setup(struct App *a) {
@@ -320,7 +240,10 @@ void setup(struct App *a) {
     die("Can't load font\n");
   }
 
-  a->xftdraw = XftDrawCreate(dpy, win, a->visual, a->colormap);
+  a->buffer = XCreatePixmap(dpy, win, a->width_app, a->height_app,
+                          DefaultDepth(dpy, DefaultScreen(dpy)));
+
+  a->xftdraw = XftDrawCreate(dpy, a->buffer, a->visual, a->colormap);
 
   Atom net_wm_state = XInternAtom(dpy, "_NET_WM_STATE", False);
   Atom net_wm_state_above = XInternAtom(dpy, "_NET_WM_STATE_ABOVE", False);
@@ -402,9 +325,15 @@ void cleanup(struct App *a) {
     XUngrabPointer(dpy, CurrentTime);
     XUngrabKeyboard(dpy, CurrentTime);
   }
+
   for (int i = 0; i < a->widget_count; i++) {
     free(a->widgets[i].text);
+    free(a->widgets[i].valid_label);
+    free(a->widgets[i].invalid_label);
   }
+
+  if (a->buffer)
+    XFreePixmap(dpy, a->buffer);
 
   if (a->xftdraw)
     XftDrawDestroy(a->xftdraw);

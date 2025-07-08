@@ -5,6 +5,7 @@
 #include "../include/getters.h"
 #include "../include/handlers.h"
 #include "../include/utils.h"
+#include "../include/ui.h"
 #include <stdbool.h>
 
 void cleanup(struct App *a);

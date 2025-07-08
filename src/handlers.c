@@ -45,7 +45,7 @@ void handler_slider(struct Widget *w) {
 
 int handle_button_press(struct App *a, XEvent *ev) {
   if (ev->xbutton.x_root >= a->width_app || ev->xbutton.x_root <= POS_X ||
-      ev->xbutton.y_root <= POS_Y || ev->xbutton.y_root >= a->width_app)
+      ev->xbutton.y_root <= POS_Y || ev->xbutton.y_root >= a->height_app)
     return 1;
   for (int i = 0; i < a->widget_count; ++i) {
     struct Widget *w = &a->widgets[i];
