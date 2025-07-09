@@ -16,6 +16,7 @@ enum WidgetType {
   WIDGET_LABEL,
   WIDGET_BUTTON,
   WIDGET_SLIDER,
+  TypeCount
 };
 
 enum WidgetId {
@@ -29,7 +30,8 @@ enum WidgetId {
   ButtonNotify,
   ButtonWiFi,
   ButtonBluetooth,
-  LabelBrightness
+  LabelBrightness,
+  IdCount
 };
 
 struct Widget {
@@ -50,6 +52,7 @@ struct Widget {
   int drag_offset_x;
   char *valid_label;
   char *invalid_label;
+  bool dirty;
 };
 
 struct App {
@@ -62,7 +65,6 @@ struct App {
   Colormap colormap;
   struct Widget widgets[MAX_WIDGETS];
   pthread_mutex_t lock;
-  int widget_count;
   enum WidgetId dragging_id;
   enum WidgetType dragging_type;
   Pixmap buffer;

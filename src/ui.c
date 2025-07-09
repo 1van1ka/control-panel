@@ -1,6 +1,7 @@
 #include "../include/ui.h"
 #include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
 
 XftColor color_alloc(struct App *a, XRenderColor *color_src) {
   XftColor color_dest;
@@ -9,28 +10,27 @@ XftColor color_alloc(struct App *a, XRenderColor *color_src) {
 }
 
 void create_ui(struct App *a) {
-  layout_add_button(a, ButtonPlayerPrev, "Prev", "Prev", "Prev", true);
-  layout_add_button(a, ButtonPlayerPlayPause, "Play", "Play", "Pause", true);
-  layout_add_button(a, ButtonPlayerNext, "Next", "Next", "Next", false);
+  layout_add_button(a, ButtonPlayerPrev, NULL, "Prev", "Prev", true);
+  layout_add_button(a, ButtonPlayerPlayPause, NULL, "Play", "Paus", true);
+  layout_add_button(a, ButtonPlayerNext, NULL, "Next", "Next", false);
   layout_new_row();
 
-  layout_add_button(a, ButtonWiFi, get_state_wifi() ? "Wi-Fi:On" : "Wi-Fi:Off",
-                    "Wi-Fi:On", "Wi-Fi:Off", false);
-  layout_add_button(a, ButtonBluetooth,
-                    get_state_bluetooth() ? "BT:On" : "BT:Off", "BT:On",
-                    "BT:Off", false);
+  layout_add_button(a, ButtonWiFi, get_state_wifi, "Wi-Fi:On", "Wi-Fi:Off",
+                    false);
+  layout_add_button(a, ButtonBluetooth, get_state_bluetooth, "BT:On", "BT:Off",
+                    false);
   layout_new_row();
 
-  layout_add_button(a, ButtonNotify, get_state_dunst() ? "Notify" : "Silence",
-                    "Notify", "Silence", true);
+  layout_add_button(a, ButtonNotify, get_state_dunst, "Notify", "Silence",
+                    true);
   layout_new_row();
 
-  layout_add_label(a, "Brn", false);
+  layout_add_label(a, LabelBrightness, NULL, "Brn", "Brn", false);
   layout_add_slider(a, SliderBrightness, get_level_brightness(), 100, true);
   layout_new_row();
 
-  layout_add_button(a, ButtonVolumeMute, get_state_audio_mute() ? "Mut" : "Vol",
-                    "Mut", "Vol", false);
+  layout_add_button(a, ButtonVolumeMute, get_state_audio_mute, "Mute", "Vol",
+                    false);
   layout_add_slider(a, SliderVolume, get_level_audio(), 120, true);
 
   spawn_state_thread(a, SliderBrightness, WIDGET_SLIDER, get_level_brightness);
@@ -38,49 +38,60 @@ void create_ui(struct App *a) {
   spawn_state_thread(a, ButtonVolumeMute, WIDGET_BUTTON, get_state_audio_mute);
 }
 
-void layout_add_button(struct App *a, enum WidgetId id, const char *text,
+void layout_add_button(struct App *a, enum WidgetId id, int (*state)(),
                        char *valid_data, char *invalid_data, bool full_width) {
-  XGlyphInfo extents;
-  XftTextExtents8(dpy, a->font, (FcChar8 *)text, strlen(text), &extents);
+  XGlyphInfo extents_valid, extents_invalid;
+  XftTextExtents8(dpy, a->font, (FcChar8 *)valid_data, strlen(valid_data),
+                  &extents_valid);
+  XftTextExtents8(dpy, a->font, (FcChar8 *)invalid_data, strlen(invalid_data),
+                  &extents_invalid);
 
-  int width = extents.xOff;
+  int width = extents_valid.xOff > extents_invalid.xOff ? extents_valid.xOff
+                                                        : extents_invalid.xOff;
   int height = a->font->ascent + a->font->descent;
 
-  a->widgets[a->widget_count++] =
-      (struct Widget){.type = WIDGET_BUTTON,
-                      .valid_label = strdup(valid_data),
-                      .invalid_label = strdup(invalid_data),
-                      .id = id,
-                      .x = layout_x,
-                      .y = layout_y + height,
-                      .text = strdup(text),
-                      .normal_color = color_alloc(a, &ColorsSrc[NormFg]),
-                      .normal_back = color_alloc(a, &ColorsSrc[NormBg]),
-                      .hover_color = color_alloc(a, &ColorsSrc[HoverFg]),
-                      .hover_back = color_alloc(a, &ColorsSrc[HoverBg]),
-                      .hovered = false,
-                      .full_width = full_width};
+  a->widgets[id] = (struct Widget){
+      .id = id,
+      .type = WIDGET_BUTTON,
+      .valid_label = strdup(valid_data),
+      .invalid_label = strdup(invalid_data),
+      .x = layout_x,
+      .y = layout_y + height,
+      .text = strdup((state ? state() : 1) ? valid_data : invalid_data),
+      .normal_color = color_alloc(a, &ColorsSrc[NormFg]),
+      .normal_back = color_alloc(a, &ColorsSrc[NormBg]),
+      .hover_color = color_alloc(a, &ColorsSrc[HoverFg]),
+      .hover_back = color_alloc(a, &ColorsSrc[HoverBg]),
+      .hovered = false,
+      .full_width = full_width,
+      .width = width,
+      .height = height};
 
   layout_x += width + 2 * PADDING + layout_spacing_x;
   if (height + 2 * PADDING > layout_row_height)
     layout_row_height = height + 2 * PADDING;
 }
 
-void layout_add_label(struct App *a, const char *text, bool full_width) {
-  XGlyphInfo extents;
-  XftTextExtents8(dpy, a->font, (FcChar8 *)text, strlen(text), &extents);
+void layout_add_label(struct App *a, enum WidgetId id, int (*state)(),
+                      char *valid_data, char *invalid_data, bool full_width) {
+  XGlyphInfo extents_valid, extents_invalid;
+  XftTextExtents8(dpy, a->font, (FcChar8 *)valid_data, strlen(valid_data),
+                  &extents_valid);
+  XftTextExtents8(dpy, a->font, (FcChar8 *)invalid_data, strlen(invalid_data),
+                  &extents_invalid);
 
-  int width = extents.xOff;
+  int width = extents_valid.xOff > extents_invalid.xOff ? extents_valid.xOff
+                                                        : extents_invalid.xOff;
   int height = a->font->ascent + a->font->descent;
 
-  a->widgets[a->widget_count++] =
-      (struct Widget){.type = WIDGET_LABEL,
-                      .id = IdNone,
-                      .x = layout_x,
-                      .y = layout_y + height,
-                      .normal_color = color_alloc(a, &ColorsSrc[NormFg]),
-                      .text = strdup(text),
-                      .full_width = full_width};
+  a->widgets[id] = (struct Widget){
+      .type = WIDGET_LABEL,
+      .id = id,
+      .x = layout_x,
+      .y = layout_y + height,
+      .normal_color = color_alloc(a, &ColorsSrc[NormFg]),
+      .text = strdup((state ? state() : 1) ? valid_data : invalid_data),
+      .full_width = full_width};
 
   layout_x += width + 2 * PADDING + layout_spacing_x;
   if (height + 2 * PADDING > layout_row_height)
@@ -93,7 +104,7 @@ void layout_add_slider(struct App *a, enum WidgetId id, int value,
   int width = 200;
   int slider_y = layout_y + a->font->ascent;
 
-  a->widgets[a->widget_count++] =
+  a->widgets[id] =
       (struct Widget){.type = WIDGET_SLIDER,
                       .id = id,
                       .x = layout_x,

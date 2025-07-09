@@ -10,21 +10,16 @@
 
 void cleanup(struct App *a);
 void create_ui(struct App *a);
-void draw_widget(struct App *a, struct Widget *w);
 void draw_widgets(struct App *a);
 void grab_focus(void);
 void grab_keyboard(void);
 void kill_panel(Display *dpy, struct App *a, XClassHint ch);
-void layout_add_button(struct App *a, enum WidgetId id, const char *text,
-                       char *valid_data, char *invalid_data, bool full_width);
-void layout_add_label(struct App *a, const char *text, bool full_width);
-void layout_add_slider(struct App *a, enum WidgetId id, int value,
-                       int max_value, bool full_width);
-void layout_new_row(void);
+void redraw_widget(struct App *a, struct Widget *w);
 void run(struct App *a);
 void setup(struct App *a);
-void spawn_state_thread(struct App *a, int id, enum WidgetType type,
+void spawn_state_thread(struct App *a, enum WidgetId id, enum WidgetType type,
                         int (*getter)(void));
 void *state_updater_thread(void *arg);
+void widget_to_buffer(struct App *a, struct Widget *w);
 
 #endif

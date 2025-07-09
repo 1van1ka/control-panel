@@ -34,75 +34,15 @@ XRenderColor ColorsSrc[5] = {
     [NormBg] = {0x3838, 0x3838, 0x3838, 0xffff},
 };
 
-void draw_widget(struct App *a, struct Widget *w) {
-  GC gc = XCreateGC(dpy, a->buffer, 0, NULL);
-  switch (w->type) {
-  case WIDGET_LABEL: {
-    XGlyphInfo extents;
-    XftTextExtents8(dpy, a->font, (FcChar8 *)w->text, strlen(w->text),
-                    &extents);
-
-    w->width = extents.xOff;
-    w->height = a->font->ascent + a->font->descent;
-
-    XftDrawStringUtf8(a->xftdraw, &w->normal_color, a->font, w->x, w->y,
-                      (FcChar8 *)w->text, strlen(w->text));
-    break;
-  }
-
-  case WIDGET_BUTTON: {
-    XGlyphInfo extents;
-    XftTextExtents8(dpy, a->font, (FcChar8 *)w->text, strlen(w->text),
-                    &extents);
-
-    w->width = extents.xOff;
-    w->height = a->font->ascent + a->font->descent;
-
-    int rect_x = w->x - PADDING;
-    int rect_y = w->y - a->font->ascent - PADDING;
-    int rect_width = w->width + 2 * PADDING;
-    int rect_height = w->height + 2 * PADDING;
-
-    XSetForeground(dpy, gc,
-                   w->hovered ? w->hover_back.pixel : w->normal_back.pixel);
-    XFillRectangle(dpy, a->buffer, gc, rect_x, rect_y, rect_width, rect_height);
-    XFreeGC(dpy, gc);
-
-    XftDrawStringUtf8(a->xftdraw,
-                      w->hovered ? &w->hover_color : &w->normal_color, a->font,
-                      w->x, w->y, (FcChar8 *)w->text, strlen(w->text));
-    break;
-  }
-
-  case WIDGET_SLIDER: {
-    XSetForeground(dpy, gc,
-                   w->hovered ? w->hover_back.pixel : w->normal_back.pixel);
-    XFillRectangle(dpy, a->buffer, gc, w->x, w->y - 3, w->width, 6);
-
-    int knob_x = w->x + (w->slider_value * (w->width - w->knob)) / w->max_value;
-    int knob_y = w->y - w->knob / 2;
-
-    XSetForeground(dpy, gc,
-                   w->hovered ? w->hover_color.pixel : w->normal_color.pixel);
-    XFillRectangle(dpy, a->buffer, gc, knob_x, knob_y, w->knob, w->knob);
-
-    break;
-  }
-  default:
-    break;
-  XFreeGC(dpy, gc);
-  }
-}
-
 void draw_widgets(struct App *a) {
   GC gc = XCreateGC(dpy, win, 0, NULL);
   XSetForeground(dpy, gc, a->bg.pixel);
   XFillRectangle(dpy, a->buffer, gc, 0, 0, a->width_app, a->height_app);
 
-  for (int i = 0; i < a->widget_count; ++i) {
+  for (int i = 0; i < IdCount; ++i) {
     struct Widget *w = &a->widgets[i];
     pthread_mutex_lock(&a->lock);
-    draw_widget(a, w);
+    widget_to_buffer(a, w);
     pthread_mutex_unlock(&a->lock);
   }
 
@@ -160,10 +100,52 @@ void kill_panel(Display *dpy, struct App *a, XClassHint ch) {
   XFree(children);
 }
 
+void redraw_widget(struct App *a, struct Widget *w) {
+  if (!a || !w)
+    return;
+
+  int update_x, update_y, update_width, update_height;
+
+  switch (w->type) {
+  case WIDGET_SLIDER:
+    update_x = w->x - 2;
+    update_y = w->y - w->knob / 2 - 2;
+    update_width = w->width + 4;
+    update_height = w->knob + 4;
+    break;
+
+  case WIDGET_BUTTON:
+    update_x = w->x - PADDING;
+    update_y = w->y - a->font->ascent - PADDING;
+    update_width = w->width + 2 * PADDING;
+    update_height = w->height + 2 * PADDING;
+    break;
+
+  case WIDGET_LABEL:
+    update_x = w->x;
+    update_y = w->y - a->font->ascent;
+    update_width = w->width;
+    update_height = w->height;
+    break;
+
+  default:
+    return;
+  }
+
+  pthread_mutex_lock(&a->lock);
+  widget_to_buffer(a, w);
+  pthread_mutex_unlock(&a->lock);
+
+  GC gc = XCreateGC(dpy, win, 0, NULL);
+  XCopyArea(dpy, a->buffer, win, gc, update_x, update_y, update_width,
+            update_height, update_x, update_y);
+  XFreeGC(dpy, gc);
+  XFlush(dpy);
+}
 
 void run(struct App *a) {
   XEvent ev;
-while (running) {
+  while (running) {
     XNextEvent(dpy, &ev);
 
     update_hover_state(a, ev.xmotion.x, ev.xmotion.y);
@@ -199,7 +181,7 @@ while (running) {
     default:
       break;
     }
-}
+  }
 }
 
 void setup(struct App *a) {
@@ -241,7 +223,7 @@ void setup(struct App *a) {
   }
 
   a->buffer = XCreatePixmap(dpy, win, a->width_app, a->height_app,
-                          DefaultDepth(dpy, DefaultScreen(dpy)));
+                            DefaultDepth(dpy, DefaultScreen(dpy)));
 
   a->xftdraw = XftDrawCreate(dpy, a->buffer, a->visual, a->colormap);
 
@@ -261,7 +243,7 @@ void setup(struct App *a) {
   grab_focus();
 }
 
-void spawn_state_thread(struct App *a, int id, enum WidgetType type,
+void spawn_state_thread(struct App *a, enum WidgetId id, enum WidgetType type,
                         int (*getter)(void)) {
   pthread_t thread = 0;
   struct ThreadArgs *args = malloc(sizeof(struct ThreadArgs));
@@ -278,7 +260,7 @@ void *state_updater_thread(void *arg) {
   struct ThreadArgs *args = (struct ThreadArgs *)arg;
   struct Widget *w = NULL;
 
-  for (int i = 0; i < args->app->widget_count; ++i) {
+  for (int i = 0; i < IdCount; ++i) {
     if (args->app->widgets[i].id == args->id &&
         args->app->widgets[i].type == args->type) {
       w = &args->app->widgets[i];
@@ -296,25 +278,94 @@ void *state_updater_thread(void *arg) {
       int new_value = args->getter();
       if (new_value != w->slider_value) {
         w->slider_value = new_value;
-        w->slider_value = new_value;
       }
       break;
     }
     case WIDGET_BUTTON: {
-      set_value(w, args->getter() ? w->valid_label : w->invalid_label);
+      set_value(w, args->getter);
       break;
     }
     default:
       break;
     }
-    draw_widget(args->app, w);
     pthread_mutex_unlock(&args->app->lock);
+    redraw_widget(args->app, w);
     XFlush(dpy);
     usleep(300000);
   }
 
   free(args);
   return NULL;
+}
+
+void widget_to_buffer(struct App *a, struct Widget *w) {
+  GC gc = XCreateGC(dpy, a->buffer, 0, NULL);
+  switch (w->type) {
+  case WIDGET_LABEL: {
+    XGlyphInfo extents;
+    XftTextExtents8(dpy, a->font, (FcChar8 *)w->text, strlen(w->text),
+                    &extents);
+
+    w->width = extents.xOff;
+    w->height = a->font->ascent + a->font->descent;
+
+    XftDrawStringUtf8(a->xftdraw, &w->normal_color, a->font, w->x, w->y,
+                      (FcChar8 *)w->text, strlen(w->text));
+    break;
+  }
+
+  case WIDGET_BUTTON: {
+    XGlyphInfo extents;
+    XftTextExtents8(dpy, a->font, (FcChar8 *)w->text, strlen(w->text),
+                    &extents);
+
+    int rect_x = w->x - PADDING;
+    int rect_y = w->y - a->font->ascent - PADDING;
+    int rect_width = w->width + 2 * PADDING;
+    int rect_height = w->height + 2 * PADDING;
+
+    // Рисуем фон кнопки
+    XSetForeground(dpy, gc,
+                   w->hovered ? w->hover_back.pixel : w->normal_back.pixel);
+    XFillRectangle(dpy, a->buffer, gc, rect_x, rect_y, rect_width, rect_height);
+
+    XFreeGC(dpy, gc);
+
+    // Центрируем текст по ширине
+    int text_x = w->x + (w->width - extents.xOff) / 2;
+    int text_y = w->y;
+
+    XftDrawStringUtf8(a->xftdraw,
+                      w->hovered ? &w->hover_color : &w->normal_color, a->font,
+                      text_x, text_y, (FcChar8 *)w->text, strlen(w->text));
+    break;
+  }
+
+  case WIDGET_SLIDER: {
+    int full_x = w->x - 2;
+    int full_y = w->y - w->knob / 2 - 2;
+    int full_width = w->width + 4;
+    int full_height = w->knob + 4;
+
+    XSetForeground(dpy, gc, a->bg.pixel);
+    XFillRectangle(dpy, a->buffer, gc, full_x, full_y, full_width, full_height);
+
+    XSetForeground(dpy, gc,
+                   w->hovered ? w->hover_back.pixel : w->normal_back.pixel);
+    XFillRectangle(dpy, a->buffer, gc, w->x, w->y - 4, w->width, 8);
+
+    int knob_x = w->x + (w->slider_value * (w->width - w->knob)) / w->max_value;
+    int knob_y = w->y - w->knob / 2;
+
+    XSetForeground(dpy, gc,
+                   w->hovered ? w->hover_color.pixel : w->normal_color.pixel);
+    XFillRectangle(dpy, a->buffer, gc, knob_x, knob_y, w->knob, w->knob);
+    break;
+  }
+  default:
+    break;
+    XFreeGC(dpy, gc);
+  }
 }
 
 void cleanup(struct App *a) {
@@ -326,7 +377,7 @@ void cleanup(struct App *a) {
     XUngrabKeyboard(dpy, CurrentTime);
   }
 
-  for (int i = 0; i < a->widget_count; i++) {
+  for (int i = 0; i < IdCount; i++) {
     free(a->widgets[i].text);
     free(a->widgets[i].valid_label);
     free(a->widgets[i].invalid_label);

@@ -47,7 +47,7 @@ int handle_button_press(struct App *a, XEvent *ev) {
   if (ev->xbutton.x_root >= a->width_app || ev->xbutton.x_root <= POS_X ||
       ev->xbutton.y_root <= POS_Y || ev->xbutton.y_root >= a->height_app)
     return 1;
-  for (int i = 0; i < a->widget_count; ++i) {
+  for (int i = 0; i < IdCount; ++i) {
     struct Widget *w = &a->widgets[i];
     if (w->hovered)
       switch (w->type) {
@@ -84,7 +84,7 @@ int handle_button_press(struct App *a, XEvent *ev) {
 }
 
 int handle_motion_notify(struct App *a, XEvent *ev) {
-  for (int i = 0; i < a->widget_count; i++) {
+  for (int i = 0; i < IdCount; i++) {
     struct Widget *w = &a->widgets[i];
     if (w->type == WIDGET_SLIDER && w->id == a->dragging_id) {
       int new_val = ((ev->xmotion.x - w->drag_offset_x - w->x) * w->max_value) /
@@ -100,8 +100,7 @@ int handle_motion_notify(struct App *a, XEvent *ev) {
       long delta_ms = (now.tv_sec - last_update.tv_sec) * 1000 +
                       (now.tv_nsec - last_update.tv_nsec) / 1000000;
 
-      if (delta_ms > 20) {
-        draw_widget(a, w);
+      if (delta_ms > 50) {
         handler_slider(w);
         last_update = now;
       }
@@ -111,17 +110,11 @@ int handle_motion_notify(struct App *a, XEvent *ev) {
 }
 
 void on_bluetooth_clicked(struct Widget *w) {
-  int state = get_state_bluetooth();
 
-  if (state == 1) {
-    char *argv[] = {"rfkill", "block", "bluetooth", NULL};
-    execute_command_args(argv);
-    set_value(w, "BT:Off");
-  } else if (state == 0) {
-    char *argv[] = {"rfkill", "unblock", "bluetooth", NULL};
-    execute_command_args(argv);
-    set_value(w, "BT:On");
-  }
+  char *argv[] = {"rfkill", get_state_bluetooth() ? "block" : "unblock",
+                  "bluetooth", NULL};
+  execute_command_args(argv);
+  set_value(w, get_state_bluetooth);
 }
 
 void on_brightness_changed(int value) {
@@ -153,7 +146,7 @@ void on_notify_clicked(struct Widget *w) {
   char *argv2[] = {"pkill", "-RTMIN+3", "dwmblocks", NULL};
   execute_command_args(argv1);
   execute_command_args(argv2);
-  set_value(w, get_state_dunst() ? "Notify" : "Silence");
+  set_value(w, get_state_dunst);
 }
 
 void on_volume_changed(int value) {
@@ -172,18 +165,18 @@ void on_volume_button_click(struct Widget *w) {
   char *argv2[] = {"pkill", "-RTMIN+1", "dwmblocks", NULL};
   execute_command_args(argv1);
   execute_command_args(argv2);
-  set_value(w, get_state_audio_mute() ? "Mut" : "Vol");
+  set_value(w, get_state_audio_mute);
 }
 
 void on_wifi_clicked(struct Widget *w) {
   char *argv[] = {"nmcli", "radio", "wifi", get_state_wifi() ? "off" : "on",
                   NULL};
   execute_command_args(argv);
-  set_value(w, get_state_wifi() ? "Wi-Fi:On" : "Wi-Fi:Off");
+  set_value(w, get_state_wifi);
 }
 
 void update_hover_state(struct App *a, int mouse_x, int mouse_y) {
-  for (int i = 0; i < a->widget_count; ++i) {
+  for (int i = 0; i < IdCount; ++i) {
     struct Widget *w = &a->widgets[i];
     switch (w->type) {
     case WIDGET_BUTTON: {

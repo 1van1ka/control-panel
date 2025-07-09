@@ -53,7 +53,7 @@ int read_int_from_file(const char *path) {
   return value;
 }
 
-void set_value(struct Widget *w, char const *text_src) {
+void set_value(struct Widget *w, int (*state)()) {
   free(w->text);
-  w->text = strdup(text_src);
+  w->text = strdup((state ? state() : 1) ? w->valid_label : w->invalid_label);
 }
