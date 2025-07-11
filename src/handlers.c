@@ -44,8 +44,9 @@ void handler_slider(struct Widget *w) {
 }
 
 int handle_button_press(struct App *a, XEvent *ev) {
-  if (ev->xbutton.x_root >= a->width_app || ev->xbutton.x_root <= POS_X ||
-      ev->xbutton.y_root <= POS_Y || ev->xbutton.y_root >= a->height_app)
+  if (ev->xbutton.x_root >= a->width_app + POS_X ||
+      ev->xbutton.x_root <= POS_X || ev->xbutton.y_root <= POS_Y ||
+      ev->xbutton.y_root >= a->height_app + POS_Y)
     return 1;
   for (int i = 0; i < IdCount; ++i) {
     struct Widget *w = &a->widgets[i];
@@ -84,27 +85,27 @@ int handle_button_press(struct App *a, XEvent *ev) {
 }
 
 int handle_motion_notify(struct App *a, XEvent *ev) {
-  for (int i = 0; i < IdCount; i++) {
-    struct Widget *w = &a->widgets[i];
-    if (w->type == WIDGET_SLIDER && w->id == a->dragging_id) {
-      int new_val = ((ev->xmotion.x - w->drag_offset_x - w->x) * w->max_value) /
-                    (w->width - w->knob);
-      new_val = new_val < 0              ? 0
-                : new_val > w->max_value ? w->max_value
-                                         : new_val;
-      w->slider_value = new_val;
-      static struct timespec last_update = {0, 0};
-      struct timespec now;
-      clock_gettime(CLOCK_MONOTONIC, &now);
+  struct Widget *w = &a->widgets[a->dragging_id];
+  switch (w->type) {
+  case WIDGET_SLIDER: {
+    int new_val = ((ev->xmotion.x - w->drag_offset_x - w->x) * w->max_value) /
+                  (w->width - w->knob);
+    new_val = new_val < 0 ? 0 : new_val > w->max_value ? w->max_value : new_val;
+    w->slider_value = new_val;
+    static struct timespec last_update = {0, 0};
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
 
-      long delta_ms = (now.tv_sec - last_update.tv_sec) * 1000 +
-                      (now.tv_nsec - last_update.tv_nsec) / 1000000;
+    long delta_ms = (now.tv_sec - last_update.tv_sec) * 1000 +
+                    (now.tv_nsec - last_update.tv_nsec) / 1000000;
 
-      if (delta_ms > 50) {
-        handler_slider(w);
-        last_update = now;
-      }
+    if (delta_ms > 35) {
+      handler_slider(w);
+      last_update = now;
     }
+  }
+  default:
+    break;
   }
   return 0;
 }
@@ -155,16 +156,12 @@ void on_volume_changed(int value) {
 
   char *argv1[] = {"wpctl", "set-volume", "-l", "1.2", "@DEFAULT_AUDIO_SINK@",
                    arg,     NULL};
-  char *argv2[] = {"pkill", "-RTMIN+1", "dwmblocks", NULL};
   execute_command_args(argv1);
-  execute_command_args(argv2);
 }
 
 void on_volume_button_click(struct Widget *w) {
   char *argv1[] = {"wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle", NULL};
-  char *argv2[] = {"pkill", "-RTMIN+1", "dwmblocks", NULL};
   execute_command_args(argv1);
-  execute_command_args(argv2);
   set_value(w, get_state_audio_mute);
 }
 
@@ -178,29 +175,34 @@ void on_wifi_clicked(struct Widget *w) {
 void update_hover_state(struct App *a, int mouse_x, int mouse_y) {
   for (int i = 0; i < IdCount; ++i) {
     struct Widget *w = &a->widgets[i];
+
     switch (w->type) {
     case WIDGET_BUTTON: {
       int top = w->y - a->font->ascent - PADDING;
-      int bottom = w->y - a->font->ascent - PADDING + w->height + 2 * PADDING;
+      int bottom = top + w->height + 2 * PADDING;
       int left = w->x - PADDING;
-      int right = w->x - PADDING + w->width + 2 * PADDING;
+      int right = left + w->width + 2 * PADDING;
+
       w->hovered =
           (a->dragging_id == w->id && a->dragging_type == w->type) ||
           ((a->dragging_id == IdNone) && (mouse_x >= left && mouse_x <= right &&
                                           mouse_y >= top && mouse_y <= bottom));
       break;
     }
+
     case WIDGET_SLIDER: {
       int top = w->y - w->height / 2;
       int bottom = w->y + w->height / 2;
       int left = w->x;
       int right = w->x + w->width;
+
       w->hovered =
           (a->dragging_id == w->id && a->dragging_type == w->type) ||
           ((a->dragging_id == IdNone) && (mouse_x >= left && mouse_x <= right &&
                                           mouse_y >= top && mouse_y <= bottom));
       break;
     }
+
     default:
       break;
     }

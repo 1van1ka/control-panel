@@ -148,12 +148,11 @@ void run(struct App *a) {
   while (running) {
     XNextEvent(dpy, &ev);
 
-    update_hover_state(a, ev.xmotion.x, ev.xmotion.y);
-
     switch (ev.type) {
     case EnterNotify:
     case LeaveNotify:
     case MotionNotify:
+      update_hover_state(a, ev.xmotion.x, ev.xmotion.y);
       if (handle_motion_notify(a, &ev))
         running = 0;
       draw_widgets(a);
@@ -172,10 +171,11 @@ void run(struct App *a) {
     case ButtonRelease:
       a->dragging_id = IdNone;
       a->dragging_type = TypeNone;
+      update_hover_state(a, ev.xbutton.x, ev.xbutton.y);
+      draw_widgets(a);
       break;
 
     case Expose:
-      draw_widgets(a);
       break;
 
     default:
@@ -190,6 +190,10 @@ void setup(struct App *a) {
 
   pthread_mutex_init(&a->lock, NULL);
   XClassHint ch = {"center", "center"};
+
+  if (!XInitThreads()) {
+    die("Xlib thread initialization failed.\n");
+  }
 
   if (!(dpy = XOpenDisplay(NULL))) {
     die("Can't open display\n");
@@ -258,43 +262,38 @@ void spawn_state_thread(struct App *a, enum WidgetId id, enum WidgetType type,
 
 void *state_updater_thread(void *arg) {
   struct ThreadArgs *args = (struct ThreadArgs *)arg;
-  struct Widget *w = NULL;
+  struct Widget *w = &args->app->widgets[args->id];
 
-  for (int i = 0; i < IdCount; ++i) {
-    if (args->app->widgets[i].id == args->id &&
-        args->app->widgets[i].type == args->type) {
-      w = &args->app->widgets[i];
-      break;
-    }
+  if (!w || !args->getter) {
+    free(args);
+    return NULL;
   }
 
-  if (!w || !args->getter)
-    return NULL;
-
   while (running) {
-    pthread_mutex_lock(&args->app->lock);
-    switch (w->type) {
-    case WIDGET_SLIDER: {
-      int new_value = args->getter();
-      if (new_value != w->slider_value) {
-        w->slider_value = new_value;
+    if (w->id != args->app->dragging_id) {
+      pthread_mutex_lock(&args->app->lock);
+
+      switch (w->type) {
+      case WIDGET_SLIDER:
+        w->slider_value = args->getter();
+        break;
+
+      case WIDGET_BUTTON:
+        set_value(w, args->getter);
+        break;
+
+      default:
+        break;
       }
-      break;
+
+      pthread_mutex_unlock(&args->app->lock);
+      redraw_widget(args->app, w);
+      usleep(300000);
     }
-    case WIDGET_BUTTON: {
-      set_value(w, args->getter);
-      break;
-    }
-    default:
-      break;
-    }
-    pthread_mutex_unlock(&args->app->lock);
-    redraw_widget(args->app, w);
-    XFlush(dpy);
-    usleep(300000);
   }
 
   free(args);
+
   return NULL;
 }
 
@@ -309,7 +308,10 @@ void widget_to_buffer(struct App *a, struct Widget *w) {
     w->width = extents.xOff;
     w->height = a->font->ascent + a->font->descent;
 
-    XftDrawStringUtf8(a->xftdraw, &w->normal_color, a->font, w->x, w->y,
+    int text_x = w->x + (w->width - extents.xOff) / 2;
+    int text_y = w->y;
+
+    XftDrawStringUtf8(a->xftdraw, &w->normal_color, a->font, text_x, text_y,
                       (FcChar8 *)w->text, strlen(w->text));
     break;
   }
@@ -324,14 +326,10 @@ void widget_to_buffer(struct App *a, struct Widget *w) {
     int rect_width = w->width + 2 * PADDING;
     int rect_height = w->height + 2 * PADDING;
 
-    // Рисуем фон кнопки
     XSetForeground(dpy, gc,
                    w->hovered ? w->hover_back.pixel : w->normal_back.pixel);
     XFillRectangle(dpy, a->buffer, gc, rect_x, rect_y, rect_width, rect_height);
 
-    XFreeGC(dpy, gc);
-
-    // Центрируем текст по ширине
     int text_x = w->x + (w->width - extents.xOff) / 2;
     int text_y = w->y;
 
@@ -364,8 +362,8 @@ void widget_to_buffer(struct App *a, struct Widget *w) {
   }
   default:
     break;
-    XFreeGC(dpy, gc);
   }
+  XFreeGC(dpy, gc);
 }
 
 void cleanup(struct App *a) {
@@ -396,6 +394,8 @@ void cleanup(struct App *a) {
   }
   if (dpy)
     XCloseDisplay(dpy);
+  if (a)
+    free(a);
 }
 
 int main(void) {

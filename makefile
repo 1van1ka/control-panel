@@ -3,7 +3,7 @@ CC      = gcc
 SRC_DIR = src
 OBJ_DIR = build
 
-CFLAGS = -Wall -Wextra
+CFLAGS = -O2 -march=native -Wall -Wextra
 CFLAGS += $(shell pkg-config --cflags x11 xft)
 
 LDFLAGS = $(shell pkg-config --libs x11 xft)

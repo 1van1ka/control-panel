@@ -52,7 +52,6 @@ struct Widget {
   int drag_offset_x;
   char *valid_label;
   char *invalid_label;
-  bool dirty;
 };
 
 struct App {
