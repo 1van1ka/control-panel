@@ -61,13 +61,21 @@ int get_level_brightness(void) {
 }
 
 int get_state_bluetooth(void) {
-  int state = -1;
-  FILE *f = fopen("/sys/class/rfkill/rfkill2/state", "r");
-  if (f) {
-    fscanf(f, "%d", &state);
-    fclose(f);
+  FILE *fp = popen("rfkill list bluetooth | grep \"Soft blocked\" | awk '{print $3}'", "r");
+  if (!fp) {
+    perror("popen failed");
+    return 0;
   }
-  return state;
+  char buffer[32];
+  if (fgets(buffer, sizeof(buffer), fp) == NULL) {
+    pclose(fp);
+    return 0;
+  }
+
+  pclose(fp);
+  buffer[strcspn(buffer, "\n")] = 0;
+
+  return !(strcmp(buffer, "yes") == 0);
 }
 
 int get_state_dunst(void) {
