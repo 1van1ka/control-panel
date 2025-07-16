@@ -45,11 +45,11 @@ int get_text_width(struct App *a, const char *valid, const char *invalid) {
 void create_ui(struct App *a) {
   struct Layout layout[][3] = {
       {{.type = WIDGET_BUTTON,
-        .button = {a, ButtonPlayerPrev, NULL, "Prev", "Prev", false}},
+        .button = {a, ButtonPlayerPrev, NULL, "Prev", "Prev", true}},
        {.type = WIDGET_BUTTON,
         .button = {a, ButtonPlayerPlayPause, NULL, "Play", "Paus", true}},
        {.type = WIDGET_BUTTON,
-        .button = {a, ButtonPlayerNext, NULL, "Next", "Next", false}}},
+        .button = {a, ButtonPlayerNext, NULL, "Next", "Next", true}}},
 
       {{.type = WIDGET_BUTTON,
         .button = {a, ButtonWiFi, get_state_wifi, "Wi-Fi:On", "Wi-Fi:Off",
@@ -118,8 +118,6 @@ void create_ui(struct App *a) {
     int dynamic_width =
         dynamic_count > 0 ? (total_width - fixed_width) / dynamic_count : 0;
 
-    printf("%d %d %d\n", total_width, fixed_width, dynamic_count);
-
     for (int j = 0; j < num_cols; j++) {
       bool is_last = (j == num_cols - 1);
       struct Layout *l = &layout[i][j];
@@ -147,7 +145,6 @@ void create_ui(struct App *a) {
     }
 
     layout_new_row();
-    printf("\n");
   }
 
   spawn_state_thread(a, SliderBrightness, WIDGET_SLIDER, get_level_brightness);
@@ -219,7 +216,6 @@ void layout_add_button(struct App *a, enum WidgetId id, int (*state)(),
 
   layout_x += width + 2 * PADDING;
 
-  printf("%d", is_last);
   if (!is_last)
     layout_x += layout_spacing_x;
   if (height + 2 * PADDING > layout_row_height)
@@ -250,7 +246,6 @@ void layout_add_label(struct App *a, enum WidgetId id, int (*state)(),
       .text = strdup((state ? state() : 1) ? valid_data : invalid_data)};
 
   layout_x += width + 2 * PADDING;
-  printf("%d", is_last);
   if (!is_last)
     layout_x += layout_spacing_x;
   if (height + 2 * PADDING > layout_row_height)
@@ -279,7 +274,6 @@ void layout_add_slider(struct App *a, enum WidgetId id, int value,
                       .max_value = max_value};
 
   layout_x += width + 2 * PADDING;
-  printf("%d", is_last);
   if (!is_last)
     layout_x += layout_spacing_x;
 

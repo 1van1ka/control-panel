@@ -1,5 +1,6 @@
 #include "../include/handlers.h"
 #include <stdio.h>
+#include <unistd.h>
 #include <time.h>
 
 void handler_button(struct Widget *w) {
