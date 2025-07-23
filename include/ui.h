@@ -1,9 +1,9 @@
 #ifndef UI_H
 #define UI_H
 
-#include "../config.h"
-#include "../include/control_center.h"
-#include "../include/getters.h"
+#include "config.h"
+#include "control_center.h"
+#include "getters.h"
 
 extern Display *dpy;
 extern int layout_x;

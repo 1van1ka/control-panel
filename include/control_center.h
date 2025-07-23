@@ -1,11 +1,11 @@
 #ifndef CONTROL_CENTER_H
 #define CONTROL_CENTER_H
 
-#include "../config.h"
-#include "../include/getters.h"
-#include "../include/handlers.h"
-#include "../include/utils.h"
-#include "../include/ui.h"
+#include "config.h"
+#include "getters.h"
+#include "handlers.h"
+#include "utils.h"
+#include "ui.h"
 #include <stdbool.h>
 
 void cleanup(struct App *a);

@@ -1,10 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <X11/X.h>
-#include <X11/Xatom.h>
 #include <X11/Xft/Xft.h>
-#include <X11/Xlib.h>
 #define POS_X 25
 #define POS_Y 25
 #define FONT "JetBrains Mono-14"

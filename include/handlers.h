@@ -1,10 +1,9 @@
 #ifndef HANDLERS_H
 #define HANDLERS_H
 
-#include "../config.h"
-#include "../include/control_center.h"
-#include "../include/getters.h"
-#include "../include/utils.h"
+#include "config.h"
+#include "control_center.h"
+#include "getters.h"
 #include "utils.h"
 #include <X11/Xlib.h>
 

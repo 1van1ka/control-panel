@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "../config.h"
+#include "config.h"
 
 void die(const char *fmt, ...);
 void execute_command_args(char *const argv[]);
