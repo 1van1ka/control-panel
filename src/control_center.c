@@ -15,16 +15,17 @@
 #include <unistd.h>
 
 Display *dpy;
-static Window win;
+Window win;
+struct Widget widgets[MAX_WIDGETS];
 
 static int running = 1;
 const int PADDING = 7;
 
-int layout_x = 20;
-int layout_y = 20;
-int layout_row_height = 0;
 const int layout_spacing_x = 10;
 const int layout_spacing_y = 10;
+int layout_x = layout_spacing_x + PADDING;
+int layout_y = layout_spacing_y;
+int layout_row_height = 0;
 
 XRenderColor ColorsSrc[5] = {
     [NormFg] = {0xaaaa, 0xaaaa, 0xaaaa, 0xffff},
@@ -40,7 +41,7 @@ void draw_widgets(struct App *a) {
   XFillRectangle(dpy, a->buffer, gc, 0, 0, a->width_app, a->height_app);
 
   for (int i = 0; i < IdCount; ++i) {
-    struct Widget *w = &a->widgets[i];
+    struct Widget *w = &widgets[i];
     pthread_mutex_lock(&a->lock);
     widget_to_buffer(a, w);
     pthread_mutex_unlock(&a->lock);
@@ -262,7 +263,7 @@ void spawn_state_thread(struct App *a, enum WidgetId id, enum WidgetType type,
 
 void *state_updater_thread(void *arg) {
   struct ThreadArgs *args = (struct ThreadArgs *)arg;
-  struct Widget *w = &args->app->widgets[args->id];
+  struct Widget *w = &widgets[args->id];
 
   if (!w || !args->getter) {
     free(args);
@@ -376,9 +377,9 @@ void cleanup(struct App *a) {
   }
 
   for (int i = 0; i < IdCount; i++) {
-    free(a->widgets[i].text);
-    free(a->widgets[i].valid_label);
-    free(a->widgets[i].invalid_label);
+    free(widgets[i].text);
+    free(widgets[i].valid_label);
+    free(widgets[i].invalid_label);
   }
 
   if (a->buffer)

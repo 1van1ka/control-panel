@@ -59,7 +59,6 @@ struct App {
   XftFont *font;
   Visual *visual;
   Colormap colormap;
-  struct Widget widgets[MAX_WIDGETS];
   pthread_mutex_t lock;
   enum WidgetId dragging_id;
   enum WidgetType dragging_type;

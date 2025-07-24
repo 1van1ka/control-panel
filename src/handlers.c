@@ -50,7 +50,7 @@ int handle_button_press(struct App *a, XEvent *ev) {
       ev->xbutton.y_root >= a->height_app + POS_Y)
     return 1;
   for (int i = 0; i < IdCount; ++i) {
-    struct Widget *w = &a->widgets[i];
+    struct Widget *w = &widgets[i];
     if (w->hovered)
       switch (w->type) {
       case WIDGET_BUTTON:
@@ -86,7 +86,7 @@ int handle_button_press(struct App *a, XEvent *ev) {
 }
 
 int handle_motion_notify(struct App *a, XEvent *ev) {
-  struct Widget *w = &a->widgets[a->dragging_id];
+  struct Widget *w = &widgets[a->dragging_id];
   switch (w->type) {
   case WIDGET_SLIDER: {
     int new_val = ((ev->xmotion.x - w->drag_offset_x - w->x) * w->max_value) /
@@ -175,7 +175,7 @@ void on_wifi_clicked(struct Widget *w) {
 
 void update_hover_state(struct App *a, int mouse_x, int mouse_y) {
   for (int i = 0; i < IdCount; ++i) {
-    struct Widget *w = &a->widgets[i];
+    struct Widget *w = &widgets[i];
 
     switch (w->type) {
     case WIDGET_BUTTON: {

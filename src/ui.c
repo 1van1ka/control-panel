@@ -1,7 +1,6 @@
 #include "../include/ui.h"
 #include <X11/X.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -9,37 +8,6 @@ XftColor color_alloc(struct App *a, XRenderColor *color_src) {
   XftColor color_dest;
   XftColorAllocValue(dpy, a->visual, a->colormap, color_src, &color_dest);
   return color_dest;
-}
-struct Layout {
-  enum WidgetType type;
-  union {
-    struct {
-      struct App *a;
-      enum WidgetId id;
-      int (*state)();
-      char *valid_data;
-      char *invalid_data;
-      bool full_width;
-    } button, label;
-
-    struct Slider {
-      struct App *a;
-      enum WidgetId id;
-      int value;
-      int max_value;
-      bool full_width;
-    } slider;
-  };
-};
-
-int get_text_width(struct App *a, const char *valid, const char *invalid) {
-  XGlyphInfo extents_valid, extents_invalid;
-  XftTextExtents8(dpy, a->font, (FcChar8 *)valid, strlen(valid),
-                  &extents_valid);
-  XftTextExtents8(dpy, a->font, (FcChar8 *)invalid, strlen(invalid),
-                  &extents_invalid);
-  return extents_valid.xOff > extents_invalid.xOff ? extents_valid.xOff
-                                                   : extents_invalid.xOff;
 }
 
 void create_ui(struct App *a) {
@@ -152,37 +120,6 @@ void create_ui(struct App *a) {
   spawn_state_thread(a, ButtonVolumeMute, WIDGET_BUTTON, get_state_audio_mute);
 }
 
-// void create_ui(struct App *a) {
-//   layout_add_button(a, ButtonPlayerPrev, NULL, "Prev", "Prev", true);
-//   layout_add_button(a, ButtonPlayerPlayPause, NULL, "Play", "Paus", true);
-//   layout_add_button(a, ButtonPlayerNext, NULL, "Next", "Next", false);
-//   layout_new_row();
-//
-//   layout_add_button(a, ButtonWiFi, get_state_wifi, "Wi-Fi:On", "Wi-Fi:Off",
-//                     false);
-//   layout_add_button(a, ButtonBluetooth, get_state_bluetooth, "BT:On",
-//   "BT:Off",
-//                     false);
-//   layout_new_row();
-//
-//   layout_add_button(a, ButtonNotify, get_state_dunst, "Notify", "Silence",
-//                     true);
-//   layout_new_row();
-//
-//   layout_add_label(a, LabelBrightness, NULL, "Brn", "Brn", false);
-//   layout_add_slider(a, SliderBrightness, get_level_brightness(), 100, true);
-//   layout_new_row();
-//
-//   layout_add_button(a, ButtonVolumeMute, get_state_audio_mute, "Mute", "Vol",
-//                     false);
-//   layout_add_slider(a, SliderVolume, get_level_audio(), 120, true);
-//
-//   spawn_state_thread(a, SliderBrightness, WIDGET_SLIDER,
-//   get_level_brightness); spawn_state_thread(a, SliderVolume, WIDGET_SLIDER,
-//   get_level_audio); spawn_state_thread(a, ButtonVolumeMute, WIDGET_BUTTON,
-//   get_state_audio_mute);
-// }
-
 void layout_add_button(struct App *a, enum WidgetId id, int (*state)(),
                        char *valid_data, char *invalid_data, int override_width,
                        bool is_last) {
@@ -198,7 +135,7 @@ void layout_add_button(struct App *a, enum WidgetId id, int (*state)(),
                                         : extents_invalid.xOff);
   int height = a->font->ascent + a->font->descent;
 
-  a->widgets[id] = (struct Widget){
+  widgets[id] = (struct Widget){
       .id = id,
       .type = WIDGET_BUTTON,
       .valid_label = strdup(valid_data),
@@ -237,7 +174,7 @@ void layout_add_label(struct App *a, enum WidgetId id, int (*state)(),
                                         : extents_invalid.xOff);
   int height = a->font->ascent + a->font->descent;
 
-  a->widgets[id] = (struct Widget){
+  widgets[id] = (struct Widget){
       .type = WIDGET_LABEL,
       .id = id,
       .x = layout_x,
@@ -258,7 +195,7 @@ void layout_add_slider(struct App *a, enum WidgetId id, int value,
   int width = override_width > 0 ? override_width : 200;
   int slider_y = layout_y + a->font->ascent;
 
-  a->widgets[id] =
+  widgets[id] =
       (struct Widget){.type = WIDGET_SLIDER,
                       .id = id,
                       .x = layout_x,
@@ -283,7 +220,7 @@ void layout_add_slider(struct App *a, enum WidgetId id, int value,
 }
 
 void layout_new_row(void) {
-  layout_x = 20;
+  layout_x = layout_spacing_x + PADDING;
   layout_y += layout_row_height + layout_spacing_y;
   layout_row_height = 0;
 }
