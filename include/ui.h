@@ -4,8 +4,10 @@
 #include "config.h"
 #include "control_center.h"
 #include "getters.h"
+#include <X11/X.h>
 
 extern Display *dpy;
+extern Window win;
 extern struct Widget widgets[MAX_WIDGETS];
 extern int layout_x;
 extern int layout_y;
@@ -34,7 +36,9 @@ struct Layout {
     } slider;
   };
 };
+
 void create_ui(struct App *a);
+int get_text_width(struct App *a, const char *valid, const char *invalid);
 void layout_add_button(struct App *a, enum WidgetId id, int (*state)(),
                        char *valid_data, char *invalid_data, int override_width,
                        bool is_last);

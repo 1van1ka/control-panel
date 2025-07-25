@@ -179,10 +179,10 @@ void update_hover_state(struct App *a, int mouse_x, int mouse_y) {
 
     switch (w->type) {
     case WIDGET_BUTTON: {
-      int top = w->y - a->font->ascent - PADDING;
-      int bottom = top + w->height + 2 * PADDING;
-      int left = w->x - PADDING;
-      int right = left + w->width + 2 * PADDING;
+      int top = w->y - a->font->ascent;
+      int bottom = top + w->height;
+      int left = w->x;
+      int right = left + w->width;
 
       w->hovered =
           (a->dragging_id == w->id && a->dragging_type == w->type) ||

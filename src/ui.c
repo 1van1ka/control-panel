@@ -1,5 +1,6 @@
 #include "../include/ui.h"
 #include <X11/X.h>
+#include <X11/Xlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
@@ -11,6 +12,37 @@ XftColor color_alloc(struct App *a, XRenderColor *color_src) {
 }
 
 void create_ui(struct App *a) {
+
+  // struct Layout layout[][3] = {
+  //     {{.type = WIDGET_BUTTON,
+  //       .button = {a, ButtonPlayerPrev, NULL, "Prev", "Prev", false}},
+  //      {.type = WIDGET_BUTTON,
+  //       .button = {a, ButtonPlayerPlayPause, NULL, "Play", "Paus", true}},
+  //      {.type = WIDGET_BUTTON,
+  //       .button = {a, ButtonPlayerNext, NULL, "Next", "Next", false}}},
+  //
+  //     {{.type = WIDGET_BUTTON,
+  //       .button = {a, ButtonWiFi, get_state_wifi, "Wi-Fi:On", "Wi-Fi:Off",
+  //                  false}},
+  //      {.type = WIDGET_BUTTON,
+  //       .button = {a, ButtonBluetooth, get_state_bluetooth, "BT:On",
+  //       "BT:Off",
+  //                  false}}},
+  //
+  //     {{.type = WIDGET_BUTTON,
+  //       .button = {a, ButtonNotify, get_state_dunst, "Notify", "Silence",
+  //                  false}}},
+  //     {{.type = WIDGET_LABEL,
+  //       .label = {a, LabelBrightness, NULL, "Brgh", "Brgh", false}},
+  //      {.type = WIDGET_SLIDER,
+  //       .slider = {a, SliderBrightness, get_level_brightness(), 100, true}}},
+  //
+  //     {{.type = WIDGET_BUTTON,
+  //       .button = {a, ButtonVolumeMute, get_state_audio_mute, "Mute", "Vol",
+  //                  false}},
+  //      {.type = WIDGET_SLIDER,
+  //       .slider = {a, SliderVolume, get_level_audio(), 120, true}}}};
+
   struct Layout layout[][3] = {
       {{.type = WIDGET_BUTTON,
         .button = {a, ButtonPlayerPrev, NULL, "Prev", "Prev", true}},
@@ -39,7 +71,8 @@ void create_ui(struct App *a) {
         .button = {a, ButtonVolumeMute, get_state_audio_mute, "Mute", "Vol",
                    false}},
        {.type = WIDGET_SLIDER,
-        .slider = {a, SliderVolume, get_level_audio(), 120, true}}}};
+        .slider = {a, SliderVolume, get_level_audio(), 120, true}}}
+  };
 
   int rows = sizeof(layout) / sizeof(layout[0]);
   int layout_cols[] = {3, 2, 1, 2, 2};
@@ -82,7 +115,7 @@ void create_ui(struct App *a) {
     }
 
     int total_width = a->width_app - 2 * layout_x;
-    fixed_width += (num_cols - 1) * (layout_spacing_x + 2 * PADDING);
+    fixed_width += (num_cols - 1) * (layout_spacing_x);
     int dynamic_width =
         dynamic_count > 0 ? (total_width - fixed_width) / dynamic_count : 0;
 
@@ -120,19 +153,21 @@ void create_ui(struct App *a) {
   spawn_state_thread(a, ButtonVolumeMute, WIDGET_BUTTON, get_state_audio_mute);
 }
 
+int get_text_width(struct App *a, const char *valid, const char *invalid) {
+  XGlyphInfo extents_valid, extents_invalid;
+  XftTextExtents8(dpy, a->font, (FcChar8 *)valid, strlen(valid),
+                  &extents_valid);
+  XftTextExtents8(dpy, a->font, (FcChar8 *)invalid, strlen(invalid),
+                  &extents_invalid);
+  return extents_valid.xOff > extents_invalid.xOff ? extents_valid.xOff
+                                                   : extents_invalid.xOff;
+}
+
 void layout_add_button(struct App *a, enum WidgetId id, int (*state)(),
                        char *valid_data, char *invalid_data, int override_width,
                        bool is_last) {
-  XGlyphInfo extents_valid, extents_invalid;
-  XftTextExtents8(dpy, a->font, (FcChar8 *)valid_data, strlen(valid_data),
-                  &extents_valid);
-  XftTextExtents8(dpy, a->font, (FcChar8 *)invalid_data, strlen(invalid_data),
-                  &extents_invalid);
-
   int width = override_width > 0 ? override_width
-                                 : (extents_valid.xOff > extents_invalid.xOff
-                                        ? extents_valid.xOff
-                                        : extents_invalid.xOff);
+                                 : get_text_width(a, valid_data, invalid_data);
   int height = a->font->ascent + a->font->descent;
 
   widgets[id] = (struct Widget){
@@ -141,7 +176,7 @@ void layout_add_button(struct App *a, enum WidgetId id, int (*state)(),
       .valid_label = strdup(valid_data),
       .invalid_label = strdup(invalid_data),
       .x = layout_x,
-      .y = layout_y + height,
+      .y = layout_y + a->font->ascent,
       .text = strdup((state ? state() : 1) ? valid_data : invalid_data),
       .normal_color = color_alloc(a, &ColorsSrc[NormFg]),
       .normal_back = color_alloc(a, &ColorsSrc[NormBg]),
@@ -151,55 +186,49 @@ void layout_add_button(struct App *a, enum WidgetId id, int (*state)(),
       .width = width,
       .height = height};
 
-  layout_x += width + 2 * PADDING;
+  layout_x += width;
 
   if (!is_last)
     layout_x += layout_spacing_x;
-  if (height + 2 * PADDING > layout_row_height)
-    layout_row_height = height + 2 * PADDING;
+  if (height > layout_row_height)
+    layout_row_height = height;
 }
 
 void layout_add_label(struct App *a, enum WidgetId id, int (*state)(),
                       char *valid_data, char *invalid_data, int override_width,
                       bool is_last) {
-  XGlyphInfo extents_valid, extents_invalid;
-  XftTextExtents8(dpy, a->font, (FcChar8 *)valid_data, strlen(valid_data),
-                  &extents_valid);
-  XftTextExtents8(dpy, a->font, (FcChar8 *)invalid_data, strlen(invalid_data),
-                  &extents_invalid);
-
   int width = override_width > 0 ? override_width
-                                 : (extents_valid.xOff > extents_invalid.xOff
-                                        ? extents_valid.xOff
-                                        : extents_invalid.xOff);
+                                 : get_text_width(a, valid_data, invalid_data);
   int height = a->font->ascent + a->font->descent;
 
   widgets[id] = (struct Widget){
       .type = WIDGET_LABEL,
       .id = id,
       .x = layout_x,
-      .y = layout_y + height,
+      .y = layout_y + a->font->ascent,
+      .width = width,
+      .height = height,
       .normal_color = color_alloc(a, &ColorsSrc[NormFg]),
       .text = strdup((state ? state() : 1) ? valid_data : invalid_data)};
 
-  layout_x += width + 2 * PADDING;
+  layout_x += width;
   if (!is_last)
     layout_x += layout_spacing_x;
-  if (height + 2 * PADDING > layout_row_height)
-    layout_row_height = height + 2 * PADDING;
+  if (height > layout_row_height)
+    layout_row_height = height;
 }
 
 void layout_add_slider(struct App *a, enum WidgetId id, int value,
                        int max_value, int override_width, bool is_last) {
   int height = 14;
   int width = override_width > 0 ? override_width : 200;
-  int slider_y = layout_y + a->font->ascent;
+  int slider_y = layout_y + (a->font->ascent + a->font->descent) / 2;
 
   widgets[id] =
       (struct Widget){.type = WIDGET_SLIDER,
                       .id = id,
                       .x = layout_x,
-                      .y = layout_y + a->font->ascent,
+                      .y = slider_y,
                       .width = width,
                       .knob = height,
                       .height = height,
@@ -210,17 +239,17 @@ void layout_add_slider(struct App *a, enum WidgetId id, int value,
                       .slider_value = value,
                       .max_value = max_value};
 
-  layout_x += width + 2 * PADDING;
+  layout_x += width;
   if (!is_last)
     layout_x += layout_spacing_x;
 
-  int total_height = (slider_y - layout_y) + height / 2 + 2 * PADDING;
+  int total_height = (slider_y - layout_y) + height;
   if (total_height > layout_row_height)
     layout_row_height = total_height;
 }
 
 void layout_new_row(void) {
-  layout_x = layout_spacing_x + PADDING;
+  layout_x = layout_spacing_x;
   layout_y += layout_row_height + layout_spacing_y;
   layout_row_height = 0;
 }

@@ -19,11 +19,10 @@ Window win;
 struct Widget widgets[MAX_WIDGETS];
 
 static int running = 1;
-const int PADDING = 7;
 
 const int layout_spacing_x = 10;
 const int layout_spacing_y = 10;
-int layout_x = layout_spacing_x + PADDING;
+int layout_x = layout_spacing_x;
 int layout_y = layout_spacing_y;
 int layout_row_height = 0;
 
@@ -116,12 +115,6 @@ void redraw_widget(struct App *a, struct Widget *w) {
     break;
 
   case WIDGET_BUTTON:
-    update_x = w->x - PADDING;
-    update_y = w->y - a->font->ascent - PADDING;
-    update_width = w->width + 2 * PADDING;
-    update_height = w->height + 2 * PADDING;
-    break;
-
   case WIDGET_LABEL:
     update_x = w->x;
     update_y = w->y - a->font->ascent;
@@ -306,9 +299,6 @@ void widget_to_buffer(struct App *a, struct Widget *w) {
     XftTextExtents8(dpy, a->font, (FcChar8 *)w->text, strlen(w->text),
                     &extents);
 
-    w->width = extents.xOff;
-    w->height = a->font->ascent + a->font->descent;
-
     int text_x = w->x + (w->width - extents.xOff) / 2;
     int text_y = w->y;
 
@@ -322,10 +312,10 @@ void widget_to_buffer(struct App *a, struct Widget *w) {
     XftTextExtents8(dpy, a->font, (FcChar8 *)w->text, strlen(w->text),
                     &extents);
 
-    int rect_x = w->x - PADDING;
-    int rect_y = w->y - a->font->ascent - PADDING;
-    int rect_width = w->width + 2 * PADDING;
-    int rect_height = w->height + 2 * PADDING;
+    int rect_x = w->x;
+    int rect_y = w->y - a->font->ascent;
+    int rect_width = w->width;
+    int rect_height = w->height;
 
     XSetForeground(dpy, gc,
                    w->hovered ? w->hover_back.pixel : w->normal_back.pixel);

@@ -1,27 +1,22 @@
 # ControlCenter
 
-Лёгкая и минималистичная панель управления для X11 (в будущем — и для Wayland), написанная на C.
+A lightweight and minimalistic control panel for X11 (and Wayland in the future), written in C.
 
-![Панель управления](images/image_2.png)
+![Control Panel](images/image_2.png)
 
-## Возможности
+## Features
 
-На текущий момент панель позволяет:
-- Управлять **громкостью** (повышение, понижение, отключение звука)
-- Управлять **яркостью**
-- Переключать **трек в медиаплеере** (следующий, предыдущий, пауза/воспроизведение)
+Currently, the panel allows you to:
+- Manage **volume** (up, down, mute)
+- Manage **brightness**
+- Switch **track in media player** (next, previous, pause/play)
+- [Future plans](plan.md)
 
-### Планы на будущее:
-- Поддержка **Wayland**
-- Поддержка **конфигурационного файла** (в формате `TOML`)
-- Расширяемость под пользовательские действия
+## Dependencies
 
-## Зависимости
-
-Требуется:
+Requires:
 - `gcc make`
-- `x11`, `xft`  
-  
+- `x11`, `xft`
+
 ```bash
 # pacman -S libx11 libxft
-
