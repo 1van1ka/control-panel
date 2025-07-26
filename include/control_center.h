@@ -8,6 +8,8 @@
 #include "ui.h"
 #include <stdbool.h>
 
+extern const int PADDING;
+
 void cleanup(struct App *a);
 void create_ui(struct App *a);
 void draw_widgets(struct App *a);

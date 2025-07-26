@@ -5,6 +5,13 @@
 #include <string.h>
 #include <unistd.h>
 
+const int PADDING = 7;
+const int layout_spacing_x = 10;
+const int layout_spacing_y = 10;
+int layout_x = layout_spacing_x;
+int layout_y = layout_spacing_y;
+int layout_row_height = 0;
+
 XftColor color_alloc(struct App *a, XRenderColor *color_src) {
   XftColor color_dest;
   XftColorAllocValue(dpy, a->visual, a->colormap, color_src, &color_dest);
@@ -25,8 +32,7 @@ void create_ui(struct App *a) {
   //       .button = {a, ButtonWiFi, get_state_wifi, "Wi-Fi:On", "Wi-Fi:Off",
   //                  false}},
   //      {.type = WIDGET_BUTTON,
-  //       .button = {a, ButtonBluetooth, get_state_bluetooth, "BT:On",
-  //       "BT:Off",
+  //       .button = {a, ButtonBluetooth, get_state_bluetooth, "BT:On", "BT:Off",
   //                  false}}},
   //
   //     {{.type = WIDGET_BUTTON,
@@ -55,7 +61,8 @@ void create_ui(struct App *a) {
         .button = {a, ButtonWiFi, get_state_wifi, "Wi-Fi:On", "Wi-Fi:Off",
                    true}},
        {.type = WIDGET_BUTTON,
-        .button = {a, ButtonBluetooth, get_state_bluetooth, "BT:On", "BT:Off",
+        .button = {a, ButtonBluetooth, get_state_bluetooth, "BT:On",
+        "BT:Off",
                    true}}},
 
       {{.type = WIDGET_BUTTON,
@@ -71,8 +78,7 @@ void create_ui(struct App *a) {
         .button = {a, ButtonVolumeMute, get_state_audio_mute, "Mute", "Vol",
                    false}},
        {.type = WIDGET_SLIDER,
-        .slider = {a, SliderVolume, get_level_audio(), 120, true}}}
-  };
+        .slider = {a, SliderVolume, get_level_audio(), 120, true}}}};
 
   int rows = sizeof(layout) / sizeof(layout[0]);
   int layout_cols[] = {3, 2, 1, 2, 2};
@@ -91,12 +97,15 @@ void create_ui(struct App *a) {
       switch (l->type) {
       case WIDGET_BUTTON: {
         is_dynamic = l->button.full_width;
-        width = get_text_width(a, l->button.valid_data, l->button.invalid_data);
+        width =
+            get_text_width(a, l->button.valid_data, l->button.invalid_data) +
+            2 * PADDING;
         break;
       }
       case WIDGET_LABEL: {
         is_dynamic = l->label.full_width;
-        width = get_text_width(a, l->label.valid_data, l->label.invalid_data);
+        width = get_text_width(a, l->label.valid_data, l->label.invalid_data) +
+                2 * PADDING;
         break;
       }
       case WIDGET_SLIDER: {
@@ -166,9 +175,10 @@ int get_text_width(struct App *a, const char *valid, const char *invalid) {
 void layout_add_button(struct App *a, enum WidgetId id, int (*state)(),
                        char *valid_data, char *invalid_data, int override_width,
                        bool is_last) {
-  int width = override_width > 0 ? override_width
-                                 : get_text_width(a, valid_data, invalid_data);
-  int height = a->font->ascent + a->font->descent;
+  int width = override_width > 0
+                  ? override_width
+                  : get_text_width(a, valid_data, invalid_data) + 2 * PADDING;
+  int height = a->font->ascent + a->font->descent + 2 * PADDING;
 
   widgets[id] = (struct Widget){
       .id = id,
@@ -197,9 +207,10 @@ void layout_add_button(struct App *a, enum WidgetId id, int (*state)(),
 void layout_add_label(struct App *a, enum WidgetId id, int (*state)(),
                       char *valid_data, char *invalid_data, int override_width,
                       bool is_last) {
-  int width = override_width > 0 ? override_width
-                                 : get_text_width(a, valid_data, invalid_data);
-  int height = a->font->ascent + a->font->descent;
+  int width = override_width > 0
+                  ? override_width
+                  : get_text_width(a, valid_data, invalid_data) + 2 * PADDING;
+  int height = a->font->ascent + a->font->descent + 2 * PADDING;
 
   widgets[id] = (struct Widget){
       .type = WIDGET_LABEL,
@@ -222,7 +233,7 @@ void layout_add_slider(struct App *a, enum WidgetId id, int value,
                        int max_value, int override_width, bool is_last) {
   int height = 14;
   int width = override_width > 0 ? override_width : 200;
-  int slider_y = layout_y + (a->font->ascent + a->font->descent) / 2;
+  int slider_y = layout_y + (a->font->ascent + a->font->descent) / 2 + PADDING;
 
   widgets[id] =
       (struct Widget){.type = WIDGET_SLIDER,

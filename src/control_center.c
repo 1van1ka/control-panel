@@ -16,15 +16,9 @@
 
 Display *dpy;
 Window win;
-struct Widget widgets[MAX_WIDGETS];
+struct Widget widgets[IdCount];
 
 static int running = 1;
-
-const int layout_spacing_x = 10;
-const int layout_spacing_y = 10;
-int layout_x = layout_spacing_x;
-int layout_y = layout_spacing_y;
-int layout_row_height = 0;
 
 XRenderColor ColorsSrc[5] = {
     [NormFg] = {0xaaaa, 0xaaaa, 0xaaaa, 0xffff},
@@ -75,30 +69,30 @@ void grab_keyboard(void) {
   die("cannot grab keyboard");
 }
 
-void kill_panel(Display *dpy, struct App *a, XClassHint ch) {
-  Window root = DefaultRootWindow(dpy);
-  Window *children;
-  unsigned int nchildren;
-
-  if (!XQueryTree(dpy, root, &root, &root, &children, &nchildren))
-    return;
-
-  for (unsigned int i = 0; i < nchildren; i++) {
-    XClassHint class_hint;
-    if (XGetClassHint(dpy, children[i], &class_hint)) {
-      if (!strcmp(class_hint.res_name, ch.res_name) &&
-          !strcmp(class_hint.res_class, ch.res_class)) {
-        XKillClient(dpy, children[i]);
-        cleanup(a);
-        die("already opened");
-        break;
-      }
-      XFree(class_hint.res_name);
-      XFree(class_hint.res_class);
-    }
-  }
-  XFree(children);
-}
+// void kill_panel(Display *dpy, struct App *a, XClassHint ch) {
+//   Window root = DefaultRootWindow(dpy);
+//   Window *children;
+//   unsigned int nchildren;
+//
+//   if (!XQueryTree(dpy, root, &root, &root, &children, &nchildren))
+//     return;
+//
+//   for (unsigned int i = 0; i < nchildren; i++) {
+//     XClassHint class_hint;
+//     if (XGetClassHint(dpy, children[i], &class_hint)) {
+//       if (!strcmp(class_hint.res_name, ch.res_name) &&
+//           !strcmp(class_hint.res_class, ch.res_class)) {
+//         XKillClient(dpy, children[i]);
+//         cleanup(a);
+//         die("already opened");
+//         break;
+//       }
+//       XFree(class_hint.res_name);
+//       XFree(class_hint.res_class);
+//     }
+//   }
+//   XFree(children);
+// }
 
 void redraw_widget(struct App *a, struct Widget *w) {
   if (!a || !w)
@@ -302,8 +296,8 @@ void widget_to_buffer(struct App *a, struct Widget *w) {
     int text_x = w->x + (w->width - extents.xOff) / 2;
     int text_y = w->y;
 
-    XftDrawStringUtf8(a->xftdraw, &w->normal_color, a->font, text_x, text_y,
-                      (FcChar8 *)w->text, strlen(w->text));
+    XftDrawStringUtf8(a->xftdraw, &w->normal_color, a->font, text_x,
+                      text_y + PADDING, (FcChar8 *)w->text, strlen(w->text));
     break;
   }
 
@@ -324,9 +318,9 @@ void widget_to_buffer(struct App *a, struct Widget *w) {
     int text_x = w->x + (w->width - extents.xOff) / 2;
     int text_y = w->y;
 
-    XftDrawStringUtf8(a->xftdraw,
-                      w->hovered ? &w->hover_color : &w->normal_color, a->font,
-                      text_x, text_y, (FcChar8 *)w->text, strlen(w->text));
+    XftDrawStringUtf8(
+        a->xftdraw, w->hovered ? &w->hover_color : &w->normal_color, a->font,
+        text_x, text_y + PADDING, (FcChar8 *)w->text, strlen(w->text));
     break;
   }
 

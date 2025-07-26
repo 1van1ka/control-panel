@@ -6,7 +6,6 @@
 #define POS_Y 25
 #define FONT "JetBrains Mono-14"
 #define BG "#282828"
-#define MAX_WIDGETS 32
 
 enum WidgetType {
   TypeNone,
@@ -76,6 +75,5 @@ struct ThreadArgs {
 enum { NormBg, HoverBg, NormFg, HoverFg, NormFgSlider };
 
 extern XRenderColor ColorsSrc[5];
-extern const int PADDING;
 
 #endif

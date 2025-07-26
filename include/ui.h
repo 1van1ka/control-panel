@@ -8,12 +8,7 @@
 
 extern Display *dpy;
 extern Window win;
-extern struct Widget widgets[MAX_WIDGETS];
-extern int layout_x;
-extern int layout_y;
-extern int layout_row_height;
-extern const int layout_spacing_x;
-extern const int layout_spacing_y;
+extern struct Widget widgets[IdCount];
 
 struct Layout {
   enum WidgetType type;
