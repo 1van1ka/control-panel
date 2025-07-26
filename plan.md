@@ -1,6 +1,8 @@
 ### Future plans:
-- [ ] Remove support padding to future rework
-- [ ] Support for **Wayland**
+- [x] Rework support padding
+- [ ] Support for rounding buttons and related UI elements
+- [ ] Support cairo
 - [ ] Support for **config file** (e.g. `YAML` format)
-- [ ] Extensibility for user actions
+- [ ] Support for CLI arguments and flags
+- [ ] Support for **Wayland**
 
