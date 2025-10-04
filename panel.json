@@ -1,0 +1,53 @@
+{
+  {
+    "type": null,
+    "args": [
+      {
+        "type": "button",
+        "args": {
+          "command": "command1",
+          "valid_data": "text",
+          "invalid_data": "text"
+        }
+      },
+      {
+        "type": "button",
+        "args": {
+          "command": "command2",
+          "valid_data": "text",
+          "invalid_data": "text"
+        }
+      }
+    ]
+  },
+
+  {
+    "type": "slider",
+    "args": {
+      "command": "command3",
+      "max_value": 20,
+      "min_value": 5
+    }
+  },
+
+  {
+    "type": null,
+    "args": [
+      {
+        "type": "button",
+        "args": {
+          "command": "command3",
+          "valid_data": "text",
+          "invalid_data": "text"
+        }
+      },
+      {
+        "type": "label",
+        "args": {
+          "valid_data": "text",
+          "invalid_data": "text"
+        }
+      }
+    ]
+  }
+}
