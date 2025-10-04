@@ -167,8 +167,8 @@ void on_volume_button_click(struct Widget *w) {
 }
 
 void on_wifi_clicked(struct Widget *w) {
-  char *argv[] = {"nmcli", "radio", "wifi", get_state_wifi() ? "off" : "on",
-                  NULL};
+  char *argv[] = {"rfkill", get_state_wifi() ? "block" : "unblock",
+                  "wifi", NULL};
   execute_command_args(argv);
   set_value(w, get_state_wifi);
 }
@@ -192,8 +192,8 @@ void update_hover_state(struct App *a, int mouse_x, int mouse_y) {
     }
 
     case WIDGET_SLIDER: {
-      int top = w->y - w->height / 2;
-      int bottom = w->y + w->height / 2;
+      int top = w->y - w->knob / 2;
+      int bottom = w->y + w->knob / 2;
       int left = w->x;
       int right = w->x + w->width;
 

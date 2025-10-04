@@ -294,10 +294,10 @@ void widget_to_buffer(struct App *a, struct Widget *w) {
                     &extents);
 
     int text_x = w->x + (w->width - extents.xOff) / 2;
-    int text_y = w->y;
+    int text_y = w->y + (w->height - a->font->ascent - a->font->descent) / 2;
 
-    XftDrawStringUtf8(a->xftdraw, &w->normal_color, a->font, text_x,
-                      text_y + PADDING, (FcChar8 *)w->text, strlen(w->text));
+    XftDrawStringUtf8(a->xftdraw, &w->normal_color, a->font, text_x, text_y,
+                      (FcChar8 *)w->text, strlen(w->text));
     break;
   }
 
@@ -316,11 +316,11 @@ void widget_to_buffer(struct App *a, struct Widget *w) {
     XFillRectangle(dpy, a->buffer, gc, rect_x, rect_y, rect_width, rect_height);
 
     int text_x = w->x + (w->width - extents.xOff) / 2;
-    int text_y = w->y;
+    int text_y = w->y + (w->height - a->font->ascent - a->font->descent) / 2;
 
-    XftDrawStringUtf8(
-        a->xftdraw, w->hovered ? &w->hover_color : &w->normal_color, a->font,
-        text_x, text_y + PADDING, (FcChar8 *)w->text, strlen(w->text));
+    XftDrawStringUtf8(a->xftdraw,
+                      w->hovered ? &w->hover_color : &w->normal_color, a->font,
+                      text_x, text_y, (FcChar8 *)w->text, strlen(w->text));
     break;
   }
 

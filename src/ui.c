@@ -30,23 +30,25 @@ void create_ui(struct App *a) {
   //
   //     {{.type = WIDGET_BUTTON,
   //       .button = {a, ButtonWiFi, get_state_wifi, "Wi-Fi:On", "Wi-Fi:Off",
-  //                  false}},
+  //                  true}},
   //      {.type = WIDGET_BUTTON,
-  //       .button = {a, ButtonBluetooth, get_state_bluetooth, "BT:On", "BT:Off",
+  //       .button = {a, ButtonBluetooth, get_state_bluetooth, "BT:On",
+  //       "BT:Off",
   //                  false}}},
   //
   //     {{.type = WIDGET_BUTTON,
   //       .button = {a, ButtonNotify, get_state_dunst, "Notify", "Silence",
   //                  false}}},
-  //     {{.type = WIDGET_LABEL,
-  //       .label = {a, LabelBrightness, NULL, "Brgh", "Brgh", false}},
-  //      {.type = WIDGET_SLIDER,
+  //     // {{.type = WIDGET_LABEL,
+  //     //   .label = {a, LabelBrightness, NULL, "Brgh", "Brgh", false}},
+  //      {{.type = WIDGET_SLIDER,
   //       .slider = {a, SliderBrightness, get_level_brightness(), 100, true}}},
   //
-  //     {{.type = WIDGET_BUTTON,
-  //       .button = {a, ButtonVolumeMute, get_state_audio_mute, "Mute", "Vol",
-  //                  false}},
-  //      {.type = WIDGET_SLIDER,
+  //     // {{.type = WIDGET_BUTTON,
+  //     //   .button = {a, ButtonVolumeMute, get_state_audio_mute, "Mute",
+  //     "Vol",
+  //     //              false}},
+  //      {{.type = WIDGET_SLIDER,
   //       .slider = {a, SliderVolume, get_level_audio(), 120, true}}}};
 
   struct Layout layout[][3] = {
@@ -61,8 +63,7 @@ void create_ui(struct App *a) {
         .button = {a, ButtonWiFi, get_state_wifi, "Wi-Fi:On", "Wi-Fi:Off",
                    true}},
        {.type = WIDGET_BUTTON,
-        .button = {a, ButtonBluetooth, get_state_bluetooth, "BT:On",
-        "BT:Off",
+        .button = {a, ButtonBluetooth, get_state_bluetooth, "BT:On", "BT:Off",
                    true}}},
 
       {{.type = WIDGET_BUTTON,
@@ -157,6 +158,8 @@ void create_ui(struct App *a) {
     layout_new_row();
   }
 
+  XResizeWindow(dpy, win, a->width_app, a->height_app = layout_y);
+
   spawn_state_thread(a, SliderBrightness, WIDGET_SLIDER, get_level_brightness);
   spawn_state_thread(a, SliderVolume, WIDGET_SLIDER, get_level_audio);
   spawn_state_thread(a, ButtonVolumeMute, WIDGET_BUTTON, get_state_audio_mute);
@@ -235,20 +238,20 @@ void layout_add_slider(struct App *a, enum WidgetId id, int value,
   int width = override_width > 0 ? override_width : 200;
   int slider_y = layout_y + (a->font->ascent + a->font->descent) / 2 + PADDING;
 
-  widgets[id] =
-      (struct Widget){.type = WIDGET_SLIDER,
-                      .id = id,
-                      .x = layout_x,
-                      .y = slider_y,
-                      .width = width,
-                      .knob = height,
-                      .height = height,
-                      .normal_color = color_alloc(a, &ColorsSrc[NormFgSlider]),
-                      .normal_back = color_alloc(a, &ColorsSrc[NormBg]),
-                      .hover_color = color_alloc(a, &ColorsSrc[HoverFg]),
-                      .hover_back = color_alloc(a, &ColorsSrc[HoverBg]),
-                      .slider_value = value,
-                      .max_value = max_value};
+  widgets[id] = (struct Widget){
+      .type = WIDGET_SLIDER,
+      .id = id,
+      .x = layout_x,
+      .y = slider_y,
+      .width = width,
+      .knob = height,
+      .height = a->font->ascent + a->font->descent + 2 * PADDING,
+      .normal_color = color_alloc(a, &ColorsSrc[NormFgSlider]),
+      .normal_back = color_alloc(a, &ColorsSrc[NormBg]),
+      .hover_color = color_alloc(a, &ColorsSrc[HoverFg]),
+      .hover_back = color_alloc(a, &ColorsSrc[HoverBg]),
+      .slider_value = value,
+      .max_value = max_value};
 
   layout_x += width;
   if (!is_last)

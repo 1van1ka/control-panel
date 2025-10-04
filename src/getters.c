@@ -97,7 +97,7 @@ int get_state_dunst(void) {
 }
 
 int get_state_wifi(void) {
-  FILE *fp = popen("nmcli -fields WIFI g | awk 'NR==2 {print $1}'", "r");
+  FILE *fp = popen("rfkill list wifi | grep \"Soft blocked\" | awk '{print $3}'", "r");
   if (!fp) {
     perror("popen failed");
     return 0;
@@ -112,5 +112,5 @@ int get_state_wifi(void) {
   pclose(fp);
   buffer[strcspn(buffer, "\n")] = 0;
 
-  return strcmp(buffer, "enabled") == 0;
+  return !(strcmp(buffer, "yes") == 0);
 }
