@@ -1,0 +1,76 @@
+components:
+  - type: null
+    args:
+      - type: button
+        args:
+          command: command1
+          valid_data: text
+          invalid_data: text
+          full_width: true
+      - type: button
+        args:
+          command: command2
+          valid_data: text
+          invalid_data: text
+          full_width: true
+
+  - type: slider
+    args:
+      command: command3
+      max_value: 20
+      min_value: 5
+      full_width: true
+
+  - type: null
+    args:
+      - type: button
+        args:
+          command: null
+          valid_data: text
+          invalid_data: text
+          full_width: true
+      - type: label
+        args:
+          valid_data: text
+          invalid_data: text
+          full_width: false
+
+  - type: null
+    args:
+      - type: button
+        args:
+          command: command3
+          valid_data: text
+          invalid_data: text
+          full_width: false
+      - type: label
+        args:
+          valid_data: text
+          invalid_data: text
+          full_width: false
+
+  - type: null
+    args:
+      - type: button
+        args:
+          command: command3
+          valid_data: text
+          invalid_data: text
+          full_width: true
+      - type: label
+        args:
+          valid_data: text
+          invalid_data: text
+          full_width: false
+      - type: button
+        args:
+          command: command3
+          valid_data: text
+          invalid_data: text
+          full_width: false
+      - type: label
+        args:
+          valid_data: text
+          invalid_data: text
+          full_width: true
+
