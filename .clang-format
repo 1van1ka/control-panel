@@ -1,0 +1,10 @@
+BasedOnStyle: LLVM
+ColumnLimit: 120
+AllowShortArraysOnASingleLine: false
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeBraces: Attach
+AlignAfterOpenBracket: Align
+IndentWidth: 2
+ContinuationIndentWidth: 6
+AllowShortFunctionsOnASingleLine: false
