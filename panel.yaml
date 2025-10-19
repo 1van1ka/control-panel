@@ -1,17 +1,27 @@
+general:
+  background: "#3C3836"
+  normal_color: "#EBDBB2"
+  normal_back: "#282828"
+  hover_color: "#282828"
+  hover_back: "#EBDBB2"
+  font: "JetBrains Mono-10"
+  position: "top-center"
+  offset: [50, 50]
+  size: [200, 80]
+
+
 components:
   - type: null
     args:
       - type: button
         args:
           command: command1
-          valid_data: text
-          invalid_data: text
+          data: text
           full_width: true
       - type: button
         args:
           command: command2
-          valid_data: text
-          invalid_data: text
+          data: text
           full_width: true
 
   - type: slider
@@ -26,13 +36,11 @@ components:
       - type: button
         args:
           command: null
-          valid_data: text
-          invalid_data: text
+          data: text
           full_width: true
       - type: label
         args:
-          valid_data: text
-          invalid_data: text
+          data: text
           full_width: false
 
   - type: null
@@ -40,13 +48,11 @@ components:
       - type: button
         args:
           command: command3
-          valid_data: text
-          invalid_data: text
+          data: text
           full_width: false
       - type: label
         args:
-          valid_data: text
-          invalid_data: text
+          data: text
           full_width: false
 
   - type: null
@@ -54,23 +60,19 @@ components:
       - type: button
         args:
           command: command3
-          valid_data: text
-          invalid_data: text
+          data: text
           full_width: true
       - type: label
         args:
-          valid_data: text
-          invalid_data: text
+          data: text
           full_width: false
       - type: button
         args:
           command: command3
-          valid_data: text
-          invalid_data: text
+          data: text
           full_width: false
       - type: label
         args:
-          valid_data: text
-          invalid_data: text
+          data: text
           full_width: true
 
